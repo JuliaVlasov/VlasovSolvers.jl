@@ -1,6 +1,11 @@
-authors = ["Pierre Navaro <pierre.navaro@math.cnrs.fr>"]
 name = "VlasovSolvers.jl"
 uuid = "e440c818-da21-11e8-37de-9dd2e420edb6"
+authors = ["Pierre Navaro <pierre.navaro@math.cnrs.fr>"]
 version = "0.1.0"
 
 [deps]
+Fourier = "9b0ccfc0-b4f0-579a-aea2-53ec11893df2"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+SemiLagrangian = "abe12ce6-d865-11e8-314f-3f926d5bd47d"
+VlasovBase = "1ed3edb2-d8f2-11e8-0207-c98dd48976b5"
+VlasovExamples = "7df14556-d869-11e8-1403-9b35b46e0256"
