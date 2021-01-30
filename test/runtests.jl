@@ -4,10 +4,10 @@ using VlasovSolvers
 @testset "Landau 1D1V" begin
 
 dev = CPU()                  # device
-nx, nv = 512, 512            # grid resolution
-stepper = "StrangSplitting"  # timestepper
+nx, nv = 64, 64              # grid resolution
+stepper = StrangSplitting()  # timestepper
 dt = 0.01                    # timestep
-nsteps = 1000                # total number of time-steps
+nsteps = 10                  # total number of time-steps
 
 xmin, xmax = 0, 4π           # X Domain length (m)
 vmin, vmax = -6, 6           # V Domain length (m)
@@ -21,6 +21,9 @@ f = DistributionFunction( xgrid, vgrid )
 
 landau!(f, α, kx)
 
+prob = VlasovProblem(f, BSL(5), dev)
+
+solve!(prob, stepper, dt, nsteps )
 @test true
 
 end

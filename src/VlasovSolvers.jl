@@ -12,5 +12,8 @@ module VlasovSolvers
   include("devices.jl")
   include("grids.jl")
   include("distribution_functions.jl")
+  include("methods.jl")
+  include("steppers.jl")
+  include("problems.jl")
 
 end
