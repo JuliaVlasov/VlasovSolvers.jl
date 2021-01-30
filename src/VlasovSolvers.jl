@@ -9,4 +9,6 @@ module VlasovSolvers
   # @reexport using FourierAdvections
   # @reexport using SplittingOperators
 
+  include("devices.jl")
+
 end
