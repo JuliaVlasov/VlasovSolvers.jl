@@ -1,13 +1,12 @@
 __precompile__()
 
-module VlasovSolvers.jl
+module VlasovSolvers
 
-using Reexport
+  using Reexport
 
-  @reexport using VlasovBase
-  @reexport using SemiLagrangian
-  @reexport using Fourier
-  @reexport using SplittingOperators
-  @reexport using VlasovExamples
+  # @reexport using VlasovBase
+  # @reexport using SemiLagrangian
+  # @reexport using FourierAdvections
+  # @reexport using SplittingOperators
 
 end
