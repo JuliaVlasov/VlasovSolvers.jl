@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Vlasov-HMF · VlasovSovers.jl</title><link rel="canonical" href="https://juliavlasov.github.io/VlasovSolvers.jl/examples/vlasov-hmf/"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">VlasovSovers.jl</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../../vlasov-ampere/">Vlasov-Ampere</a></li><li><a class="tocitem" href="../../vlasov-poisson/">Vlasov-Poisson</a></li><li><a class="tocitem" href="../../bump_on_tail/">Bump On Tail</a></li><li><a class="tocitem" href="../../rotation2d_bsl/">Rotation of a gaussian distribution</a></li><li><a class="tocitem" href="../../vlasov-hmf/">Vlasov-HMF</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Vlasov-HMF</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Vlasov-HMF</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Vlasov-HMF"><a class="docs-heading-anchor" href="#Vlasov-HMF">Vlasov-HMF</a><a id="Vlasov-HMF-1"></a><a class="docs-heading-anchor-permalink" href="#Vlasov-HMF" title="Permalink"></a></h1><p><a href="examples/&lt;unknown&gt;notebooks/vlasov-hmf.ipynb">notebook</a></p><pre><code class="language-">using LinearAlgebra, QuadGK, Roots, FFTW
+using VlasovBase
+using Plots
+pyplot()</code></pre><pre><code class="language-julia">&quot; Compute M₀ by solving F(m) = 0 &quot;
+function mag(β, mass)
+
+    F(m) = begin
+        g(x, n, m) = (1 / π) * (exp(β * m * cos(x)) * cos(n * x))
+        bessel0(x) = g(x, 0, m)
+        bessel1(x) = g(x, 1, m)
+        mass * quadgk(bessel1, 0, π)[1] / quadgk(bessel0, 0, π)[1] - m
+    end
+
+    find_zero(F, (0, mass))
+end</code></pre><pre class="documenter-example-output">Main.ex-vlasov-hmf.mag</pre><pre><code class="language-julia">function Norm(f::Array{Float64,2}, delta1, delta2)
+   return delta1 * sum(delta2 * sum(real(f), dims=1))
+end</code></pre><pre class="documenter-example-output">Norm (generic function with 1 method)</pre><pre><code class="language-">&quot;&quot;&quot;
+    hmf_poisson!(fᵗ    :: Array{Complex{Float64},2},
+                 mesh1 :: UniformMesh,
+                 mesh2 :: UniformMesh,
+                 ex    :: Array{Float64})
+
+    Compute the electric hamiltonian mean field from the
+    transposed distribution function
+
+&quot;&quot;&quot;
+function hmf_poisson!(fᵗ::Array{Complex{Float64},2},
+        mesh1::UniformMesh,
+        mesh2::UniformMesh,
+        ex::Array{Float64})
+
+    n1 = mesh1.length
+    rho = mesh2.step .* vec(sum(fᵗ, dims=1))
+    kernel = zeros(Float64, n1)
+    k = π / (mesh1.stop - mesh1.start)
+    kernel[2] = k
+    ex .= real(ifft(1im * fft(rho) .* kernel * 4π ))
+
+end</code></pre><pre><code class="language-">function bsl_advection!(f::Array{Complex{Float64},2},
+                        mesh1::UniformMesh,
+                        mesh2::UniformMesh,
+                        v::Array{Float64,1},
+                        dt;
+                        spline_degree=3)
+
+    fft!(f,1)
+    @simd for j in 1:mesh2.length
+        alpha = v[j] * dt
+        @inbounds f[:,j] .= interpolate(spline_degree, f[:,j], mesh1.step, alpha)
+    end
+    ifft!(f,1)
+end</code></pre><pre><code class="language-julia">function push_v!(f, fᵗ, mesh1, mesh2, ex, dt)
+    transpose!(fᵗ, f)
+    hmf_poisson!(fᵗ, mesh1, mesh2, ex)
+    bsl_advection!(fᵗ, mesh2, mesh1, ex, dt)
+    transpose!(f, fᵗ)
+end</code></pre><pre class="documenter-example-output">push_v! (generic function with 1 method)</pre><pre><code class="language-">function vlasov_hmf_gauss(nbiter = 10000, dt = 0.1)
+
+    mass = 1.0
+    T = 0.1
+    mesh1 = UniformMesh(-π, π, 64)
+    mesh2 = UniformMesh(-8, 8, 64)
+
+    n1, delta1 = mesh1.length, mesh1.step
+    n2, delta2 = mesh2.length, mesh2.step
+    x, v = mesh1.points, mesh2.points
+    X = repeat(x,1,n2)
+    V = repeat(v,1,n1)&#39;
+    ϵ = 0.1
+
+    b = 1 / T
+    m = mag(b, mass)
+
+    w   = sqrt(m)
+    f   = zeros(Complex{Float64}, (n1,n2))
+    fᵗ  = zeros(Complex{Float64}, (n2,n1))
+
+    f  .= exp.(-b .* ((V.^2 / 2) - m * cos.(X)))
+    a   = mass / Norm(real(f), delta1, delta2)
+    @.  f =  a * exp(-b * (((V^2) / 2) - m * cos(X))) * (1 + ϵ * cos(X))
+
+    ex = zeros(Float64,n1)
+    hmf_poisson!(f, mesh1, mesh2, ex )
+    test = copy(f)
+    T = Float64[]
+    for n in 1:nbiter
+
+        gamma1 = Norm(real(f) .* cos.(X), delta1, delta2)
+        push!(T,gamma1)
+
+        @Strang(
+            bsl_advection!(f, mesh1, mesh2, v, dt),
+            push_v!(f, fᵗ, mesh1, mesh2, ex, dt)
+        )
+
+    end
+
+    #Substracting from gamma its long time average
+
+    Gamma1 = Norm(real(f) .*cos.(X), delta1, delta2)
+    T .= T .- Gamma1
+
+    range(0., stop=nbiter*deltat, length=nbiter), abs.(T)
+
+end</code></pre><pre><code class="language-">nbiter = 1000
+deltat = 0.1
+@time t, T = vlasov_hmf_gauss(nbiter, deltat);
+plot(t, log.(T), xlabel = &quot;t&quot;, ylabel = &quot;|C[f](t)-C[f][T]|&quot;)
+savefig(&quot;vlasov-hmf-plot.png&quot;); nothing # hide</code></pre><p><img src="vlasov-hmf-plot.png" alt="png"/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Saturday 30 January 2021 19:50">Saturday 30 January 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
