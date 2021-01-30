@@ -22,6 +22,45 @@ with a neutralizing background.
 - [Vlasov Equation - Wikipedia](https://en.wikipedia.org/wiki/Vlasov_equation)
 
 
+```@setup 1
+using Plots
+```
+
+## Input parameters
+
+```@example 1
+using VlasovSolvers
+
+dev = CPU()                  # device
+nx, nv = 64, 64              # grid resolution
+stepper = StrangSplitting()  # timestepper
+dt = 0.1                     # timestep
+nsteps = 1000                # total number of time-steps
+
+xmin, xmax = 0, 4π           # X Domain length (m)
+vmin, vmax = -6, 6           # V Domain length (m)
+α  = 0.001                   # Perturbation amplitude
+kx = 0.5                     # Wave number of perturbation
+
+xgrid = OneDGrid(dev, nx, xmin, xmax)
+vgrid = OneDGrid(dev, nv, vmin, vmax)
+
+f = DistributionFunction( xgrid, vgrid )
+
+landau!(f, α, kx)
+
+prob = VlasovProblem(f, BSL(5), dev)
+
+sol = solve!(prob, stepper, dt, nsteps )
+
+t  = range(0.0, stop=tf, length=nt)
+
+plot( t, sol; label = "E")
+plot!(t, -0.1533*t.-5.50; label="-0.1533t.-5.5")
+```
+
+## Types and functions
+
 ```@autodocs
 Modules = [VlasovSolvers]
 Order   = [:type, :function]
