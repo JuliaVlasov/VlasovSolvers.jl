@@ -29,7 +29,7 @@ for example in examples
 end
 
 makedocs(modules=[VlasovSolvers],
-         sitename = "VlasovSovers.jl",
+         sitename = "VlasovSolvers.jl",
          authors="Pierre Navaro",
          format=Documenter.HTML(;
          prettyurls=get(ENV, "CI", "false") == "true",
