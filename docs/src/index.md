@@ -53,7 +53,7 @@ prob = VlasovProblem(f, BSL(5), dev)
 
 sol = solve!(prob, stepper, dt, nsteps )
 
-t  = range(0.0, stop=tf, length=nt)
+t = LinRange(0,100,1000)
 
 plot( t, sol; label = "E")
 plot!(t, -0.1533*t.-5.50; label="-0.1533t.-5.5")
