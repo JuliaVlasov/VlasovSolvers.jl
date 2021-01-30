@@ -37,7 +37,9 @@ makedocs(modules=[VlasovSolvers],
          assets=String[],
          ),
          doctest = false,
-         pages = ["Examples" => [string(example[2],".md") for example in examples]])
+         pages = ["Home"     => "index.md",
+		  "Contents" => "contents.md",
+                  "Examples" => [string(example[2],".md") for example in examples]])
 
 deploydocs(;
     branch = "gh-pages",
