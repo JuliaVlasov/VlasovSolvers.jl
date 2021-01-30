@@ -17,6 +17,10 @@ kx = 0.5                     # Wave number of perturbation
 xgrid = OneDGrid(dev, nx, xmin, xmax)
 vgrid = OneDGrid(dev, nv, vmin, vmax)
 
+f = DistributionFunction( xgrid, vgrid )
+
+landau!(f, α, kx)
+
 @test true
 
 end

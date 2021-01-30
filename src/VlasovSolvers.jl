@@ -11,5 +11,6 @@ module VlasovSolvers
 
   include("devices.jl")
   include("grids.jl")
+  include("distribution_functions.jl")
 
 end
