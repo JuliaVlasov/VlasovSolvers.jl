@@ -10,5 +10,6 @@ module VlasovSolvers
   # @reexport using SplittingOperators
 
   include("devices.jl")
+  include("grids.jl")
 
 end
