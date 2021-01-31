@@ -38,6 +38,7 @@ makedocs(modules=[VlasovSolvers],
          ),
          doctest = false,
          pages = ["Home"     => "index.md",
+                  "Example"  => "vlasov-ampere.md",
 		  "Contents" => "contents.md",
                   "Examples" => [string("generated/",ex[2],".md") for ex in examples]])
 
