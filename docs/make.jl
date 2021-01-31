@@ -20,7 +20,7 @@ examples = [
 for example in examples
 
     @show EXAMPLE     = joinpath(@__DIR__, "examples", string(example[2],".jl"))
-    @show DOC_OUTPUT  = joinpath(@__DIR__, "src")
+    @show DOC_OUTPUT  = joinpath(@__DIR__, "src", "generated")
     @show NB_OUTPUT   = joinpath(@__DIR__, "src", "notebooks")
    
     Literate.markdown(EXAMPLE, DOC_OUTPUT)
@@ -39,7 +39,7 @@ makedocs(modules=[VlasovSolvers],
          doctest = false,
          pages = ["Home"     => "index.md",
 		  "Contents" => "contents.md",
-                  "Examples" => [string(example[2],".md") for example in examples]])
+                  "Examples" => [string("generated/",ex[2],".md") for ex in examples]])
 
 deploydocs(;
     branch = "gh-pages",
