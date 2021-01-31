@@ -18,7 +18,7 @@ f = DistributionFunction( xgrid, vgrid )
 
 landau!(f, α, kx)
 
-prob = VlasovProblem(f, BSL(5), dev)
+prob = VlasovProblem(f, BSLSpline(5), dev)
 
 sol = solve!(prob, stepper, dt, nsteps )
 
