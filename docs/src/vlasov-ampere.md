@@ -1,4 +1,4 @@
-# 1D Vlasov–Ampere system
+# Vlasov–Ampere
 
 ```math
 \frac{\partial f}{\partial t} + \upsilon \frac{\partial f}{\partial x}

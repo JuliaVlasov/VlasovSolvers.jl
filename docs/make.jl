@@ -7,26 +7,6 @@ using VlasovSolvers
 
 ENV["GKSwstype"] = "100"
 
-examples = [
-"Vlasov-Ampere"  => "vlasov-ampere",
-"Vlasov-Poisson" => "vlasov-poisson",
-"Bump On Tail"   => "bump_on_tail",
-"Rotation 2D"    => "rotation2d_bsl",
-"Vlasov-HMF"     => "vlasov-hmf"
-]
-
-# generate examples
-
-for example in examples
-
-    @show EXAMPLE     = joinpath(@__DIR__, "examples", string(example[2],".jl"))
-    @show DOC_OUTPUT  = joinpath(@__DIR__, "src", "generated")
-    @show NB_OUTPUT   = joinpath(@__DIR__, "src", "notebooks")
-   
-    Literate.markdown(EXAMPLE, DOC_OUTPUT)
-    Literate.notebook(EXAMPLE, NB_OUTPUT, execute=false)
-
-end
 
 makedocs(modules=[VlasovSolvers],
          sitename = "VlasovSolvers.jl",
@@ -37,10 +17,13 @@ makedocs(modules=[VlasovSolvers],
          assets=String[],
          ),
          doctest = false,
-         pages = ["Home"     => "index.md",
-                  "Example"  => "vlasov-ampere.md",
-		  "Contents" => "contents.md",
-                  "Examples" => [string("generated/",ex[2],".md") for ex in examples]])
+         pages = ["Home"           => "index.md",
+                  "Vlasov-Poisson" => "vlasov-poisson.md",
+                  "Vlasov-Ampere"  => "vlasov-ampere.md",
+                  "Bump On Tail"   => "bump_on_tail.md",
+                  "Rotation 2D"    => "rotation2d.md",
+                  "Vlasov-HMF"     => "vlasov-hmf.md",
+		          "Contents"       => "contents.md"])
 
 deploydocs(;
     branch = "gh-pages",
