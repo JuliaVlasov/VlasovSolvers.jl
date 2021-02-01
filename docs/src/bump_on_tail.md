@@ -1,11 +1,13 @@
 # Bump On Tail
 
-```@example bump_on_tail
-using Plots
+```@example 3
 using VlasovSolvers
+using Plots
+using LaTeXStrings
 ```
 
-```@example bump_on_tail
+```@example 3
+
 dev = CPU()                  # device
 stepper = StrangSplitting()  # timestepper
 dt = 0.1                     # timestep
