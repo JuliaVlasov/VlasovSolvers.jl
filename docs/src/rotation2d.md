@@ -11,10 +11,11 @@ using VlasovSolvers
 
 ```@example rotation2d_bsl
 
-dev = CPU()
-n1, n2 = 32, 64
-mesh1 = OneDGrid(-π, π, n1)
-mesh2 = OneDGrid(-π, π, n2)
+dev = GPU()
+n1, n2 = 256, 256
+mesh1 = OneDGrid(dev, -π, π, n1)
+mesh2 = OneDGrid(dev, -π, π, n2)
+
 x = mesh1.points
 y = mesh2.points
 
