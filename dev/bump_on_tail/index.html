@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Bump On Tail · VlasovSolvers.jl</title><link rel="canonical" href="https://juliavlasov.github.io/VlasovSolvers.jl/bump_on_tail/"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">VlasovSolvers.jl</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../vlasov-poisson/">Vlasov-Poisson</a></li><li><a class="tocitem" href="../vlasov-ampere/">Vlasov-Ampere</a></li><li class="is-active"><a class="tocitem" href>Bump On Tail</a></li><li><a class="tocitem" href="../rotation2d/">Rotation 2D</a></li><li><a class="tocitem" href="../vlasov-hmf/">Vlasov-HMF</a></li><li><a class="tocitem" href="../contents/">Contents</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Bump On Tail</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Bump On Tail</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaVlasov/VlasovSolvers.jl/blob/master/docs/src/bump_on_tail.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Bump-On-Tail"><a class="docs-heading-anchor" href="#Bump-On-Tail">Bump On Tail</a><a id="Bump-On-Tail-1"></a><a class="docs-heading-anchor-permalink" href="#Bump-On-Tail" title="Permalink"></a></h1><pre><code class="language-julia">using Plots
+using VlasovSolvers</code></pre><pre><code class="language-julia">dev = CPU()                  # device
+stepper = StrangSplitting()  # timestepper
+dt = 0.1                     # timestep
+nsteps = 1000                # total number of time-steps
+
+α   = 0.03
+kx  = 0.3
+
+n1, n2 = 32, 64
+x1min, x1max = 0.0, 2π / kx
+x2min, x2max = -9., 9.
+
+mesh1 = OneDGrid(dev, n1, x1min, x1max)
+mesh2 = OneDGrid(dev, n2, x2min, x2max)
+
+f = DistributionFunction( mesh1, mesh2 )
+
+
+for (i,x) in enumerate(mesh1.points), (j,v) in enumerate(mesh2.points)
+    f.values[i,j]  = (1.0+α*cos(kx*x)) / (10*sqrt(2π)) * (9*exp(-0.5*v^2)+2*exp(-2*(v-4.5)^2))
+end</code></pre><pre><code class="language-julia">nsteps = 500
+t   = range(0.0, stop=50.0, length=nsteps)
+dt  = t[2]
+
+prob = VlasovProblem(f, BSLSpline(5), dev)
+
+sol = solve!(prob, stepper, dt, nsteps )</code></pre><pre class="documenter-example-output">500-element Array{Float64,1}:
+ -1.1285440597643437
+ -1.1411283730895685
+ -1.1665465662174213
+ -1.2053203041610439
+ -1.258292924066429
+ -1.3267167057515517
+ -1.4123988110323686
+ -1.5179466402867365
+ -1.6471950514248814
+ -1.8059943971312167
+  ⋮
+  0.041355296592291715
+  0.04513686660224588
+  0.05021032697326179
+  0.05599876369703315
+  0.06192169853721813
+  0.06742606951767506
+  0.07200895428283433
+  0.0752327037344134
+  0.07673396724111468</pre><pre><code class="language-">plot(t, sol, label=L&quot;\frac{1}{2} \log(∫e²dx)&quot;)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../vlasov-ampere/">« Vlasov-Ampere</a><a class="docs-footer-nextpage" href="../rotation2d/">Rotation 2D »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 1 February 2021 16:27">Monday 1 February 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
