@@ -4,23 +4,24 @@
 \frac{df}{dt} +  (y \frac{df}{dx} - x \frac{df}{dy}) = 0
 ```
 
-```@example rotation2d_bsl
+```@example 4
 using Plots
 using VlasovSolvers
 ```
 
-```@example rotation2d_bsl
+```@example 4
 
 dev = GPU()
 n1, n2 = 256, 256
-mesh1 = OneDGrid(dev, -π, π, n1)
-mesh2 = OneDGrid(dev, -π, π, n2)
+mesh1 = OneDGrid(dev, n1, -pi, pi)
+mesh2 = OneDGrid(dev, n2, -pi, pi)
 
 x = mesh1.points
 y = mesh2.points
 
+nsteps = 1000
 tf = 200 * pi
-dt = tf/nt
+dt = tf/nsteps
 
 f = DistributionFunction( mesh1, mesh2 )
 

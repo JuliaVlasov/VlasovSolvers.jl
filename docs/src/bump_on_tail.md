@@ -32,7 +32,7 @@ end
 
 ```
 
-```@example bump_on_tail
+```@example 3
 nsteps = 500
 t   = range(0.0, stop=50.0, length=nsteps)
 dt  = t[2]
@@ -42,6 +42,6 @@ prob = VlasovProblem(f, BSLSpline(5), dev)
 sol = solve!(prob, stepper, dt, nsteps )
 ```
 
-```@example bump_on_tail
+```@example 3
 plot(t, sol, label=L"\frac{1}{2} \log(∫e²dx)")
 ```
