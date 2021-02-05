@@ -5,6 +5,11 @@ First draft of a Vlasov solvers Julia suite.
 - Pseudo-Spectral
 - Particle-In-Cell
 
+We are consider
+$$
+\partial_t f + a \partial_x f=0
+$$
+
 
 ## Types and functions
 
