@@ -6,9 +6,9 @@ First draft of a Vlasov solvers Julia suite.
 - Particle-In-Cell
 
 We are consider
-$$
+```math
 \partial_t f + a \partial_x f=0
-$$
+```
 
 
 ## Types and functions
