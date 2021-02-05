@@ -1,9 +1,13 @@
 # VlasovSolvers.jl Documentation
 
-First draft of a Vlasov solvers Julia suite.
+*First draft of a Vlasov solvers Julia suite.*
+
+## Numerical methods
+
 - Backward Semi-Lagrangian
 - Pseudo-Spectral
-- Particle-In-Cell
+
+## Equations
 
 The Vlasov equation can be split into two parts 
 ```math
@@ -12,7 +16,7 @@ E\cdot \nabla_v f=0,
 ```
 so that the numerical solution can be approximated by the successive
 solution of each part of this splitting. Indeed, if we denote
-$\varphi^x_t(f_0)$ the solution at time $t$ of
+``\varphi^x_t(f_0)`` the solution at time $t$ of
 ```math
 \partial_t f + v\cdot \nabla_x f=0, 
 ```
@@ -99,38 +103,36 @@ B_{i,p}(x) := \frac{x - t_i}{t_{i+p} - t_i} B_{i,p-1}(x)
 and the coefficients $(\eta_i)_{i=0, \dots, N_x-1}$ are
 solution of a linear system to solve.
 
+## Algorithm
+
 Once the linear advection (or transport) equation are solved using the
 semi-Lagrangian method, the algorithm to solve the Vlasov-Poisson
 equation can be written. To do so, we consider a mesh in the truncated
 velocity domain $[-v_{\max}, v_{\max}]$: $v_j = -v_{\max} + j\Delta v,
 j=0, \dots, N_v-1, \Delta v=2v_{\max} / N_v$, $N_v$ being the number
 of points in the velocity direction. The algorithm based on
-Lie-Trotter and semi-Lagrangian method is 
+Lie-Trotter and semi-Lagrangian method is :
+
 1. Initialization. From the given initial condition $f_0(x, v)$ we can compute the initial electric field $E_0(x)$. 
-
-2. From $t_n$ to $t_{n+1}$. Knowing all the grid
-point values of $f^n$ and $E^n$
-
-+ Compute $f^\star$ solving
-```math
-\partial_t f + v\partial_x f=0, 
-```
+2. From $t_n$ to $t_{n+1}$. Knowing all the grid point values of $f^n$ and $E^n$
+  + Compute $f^\star$ solving
+    ```math
+     \partial_t f + v\partial_x f=0, 
+    ```
 using the semi-Lagrangian method $f^\star(x_i, v_j) =
 f^n(x_i-v_j\Delta t, v_j)$.
-
-+ Solve the electric field $E^\star$  from the Poisson
+  + Solve the electric field $E^\star$  from the Poisson
 equation
-```math
-\partial_x E^\star = \sum_{j=0}^{N_v-1} f^\star(x_i, v_j) \Delta v -1.  
-```
-
-+ Compute $f^{n+1}$ solving
-```math
-\partial_t f + E^\star\partial_v f = 0, 
-```
-using the semi-Lagrangian method $f^{n+1}(x_i, v_j) =
-f^n(x_i, v_j-E^\star(x_i) \Delta t)$.
+    ```math
+    \partial_x E^\star = \sum_{j=0}^{N_v-1} f^\star(x_i, v_j) \Delta v -1.  
+    ```
+  + Compute $f^{n+1}$ solving
+    ```math
+    \partial_t f + E^\star\partial_v f = 0, 
+    ```
+    using the semi-Lagrangian method $f^{n+1}(x_i, v_j) = f^n(x_i, v_j-E^\star(x_i) \Delta t)$.
   
+## Numerical method for Poisson equation
 
 The Poisson equation is solved using Fourier techniques.
 First, we consider the following DFT (Discrete Fourier Transform) of a
