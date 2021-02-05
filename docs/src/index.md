@@ -116,21 +116,21 @@ Lie-Trotter and semi-Lagrangian method is :
 1. Initialization. From the given initial condition $f_0(x, v)$ we can compute the initial electric field $E_0(x)$. 
 2. From $t_n$ to $t_{n+1}$. Knowing all the grid point values of $f^n$ and $E^n$
   + Compute $f^\star$ solving
-    ```math
-     \partial_t f + v\partial_x f=0, 
-    ```
+```math
+\partial_t f + v\partial_x f=0, 
+```
 using the semi-Lagrangian method $f^\star(x_i, v_j) =
 f^n(x_i-v_j\Delta t, v_j)$.
   + Solve the electric field $E^\star$  from the Poisson
 equation
-    ```math
-    \partial_x E^\star = \sum_{j=0}^{N_v-1} f^\star(x_i, v_j) \Delta v -1.  
-    ```
+```math
+\partial_x E^\star = \sum_{j=0}^{N_v-1} f^\star(x_i, v_j) \Delta v -1.  
+```
   + Compute $f^{n+1}$ solving
-    ```math
-    \partial_t f + E^\star\partial_v f = 0, 
-    ```
-    using the semi-Lagrangian method $f^{n+1}(x_i, v_j) = f^n(x_i, v_j-E^\star(x_i) \Delta t)$.
+```math
+\partial_t f + E^\star\partial_v f = 0, 
+```
+using the semi-Lagrangian method ``f^{n+1}(x_i, v_j) = f^n(x_i, v_j-E^\star(x_i) \Delta t)``.
   
 ## Numerical method for Poisson equation
 
@@ -197,9 +197,3 @@ $v$-transport part we have to successively solve
 d. 
 ```
 
-## Types and functions
-
-```@autodocs
-Modules = [VlasovSolvers]
-Order   = [:type, :function]
-```
