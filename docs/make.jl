@@ -2,7 +2,7 @@ push!(LOAD_PATH,"../src/")
 
 using Documenter
 using Literate
-using Plots # to not capture precompilation output
+using Plots 
 using VlasovSolvers
 
 ENV["GKSwstype"] = "100"
@@ -23,7 +23,7 @@ makedocs(modules=[VlasovSolvers],
                   "Bump On Tail"   => "bump_on_tail.md",
                   "Rotation 2D"    => "rotation2d.md",
                   "Vlasov-HMF"     => "vlasov-hmf.md",
-		          "Contents"       => "contents.md"])
+                  "Contents"       => "contents.md"])
 
 deploydocs(;
     branch = "gh-pages",
