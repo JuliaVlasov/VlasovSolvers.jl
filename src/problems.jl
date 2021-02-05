@@ -2,6 +2,10 @@ export VlasovProblem
 
 abstract type AbstractProblem end
 
+"""
+    VlasovProblem( f, method, dev)
+
+"""
 struct VlasovProblem{Method<:AbstractMethod} <: AbstractProblem
 
     f :: DistributionFunction
@@ -24,6 +28,10 @@ end
 
 export solve!
 
+"""
+    solve!( problem, stepper, dt, nsteps)
+
+"""
 function solve!( problem::VlasovProblem{BSLSpline}, stepper::StrangSplitting, dt, nsteps )
 
   nrj = Float64[]
