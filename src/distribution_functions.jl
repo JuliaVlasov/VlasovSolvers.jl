@@ -4,6 +4,10 @@ using Statistics
 
 export DistributionFunction
 
+"""
+    DistributionFunction( grid1, grid2 )
+
+"""
 struct DistributionFunction
 
     xgrid :: OneDGrid
@@ -24,6 +28,16 @@ end
 
 export landau!
 
+"""
+    landau!( f, α, kx )
+
+Initialize the distribution function for the Landau damping test case
+
+```math
+f(x,v,t=0) = \\frac{1}{\\sqrt{2\\pi}} ( 1 + \\cos (kx x) ) \\exp (-\\frac{v^2}{2})
+```
+
+"""
 function landau!( f :: DistributionFunction, α, kx)
 
     nx = f.xgrid.len
@@ -139,6 +153,7 @@ end
 # + {"slideshow": {"slide_type": "slide"}}
 """
     compute_e(f)
+
 compute Ex using that -ik*Ex = rho 
 """
 function compute_e( f::DistributionFunction )
