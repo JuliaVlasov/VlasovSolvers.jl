@@ -48,7 +48,21 @@ function landau!( f :: DistributionFunction, α, kx)
 
 end
 
+export two_stream_instability!
 
+function two_stream_instability!(f; eps = 0.01, xi = 0.90, v0 = 2.4)
+
+    nx = f.xgrid.len
+    nv = f.vgrid.len
+    xg = f.xgrid.points
+    vg = f.vgrid.points
+
+    for (i,x) in enumerate(xg), (j,v) in enumerate(vg)
+        f.values[i,j] = ((1 + eps*((cos(4π*x) + cos(6π*x)) / 1.2 
+                .+ cos(2π*x))) * (1/sqrt(2π)) * ((2-2xi)/(3-2xi))
+                    * (1 + 5 * v^2 / (1-xi)) * exp(-.5 * v^2))
+    end
+end 
 
 """
     bspline(p, j, x)
