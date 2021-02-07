@@ -5,3 +5,4 @@ deps/deps.jl
 Manifest.toml
 *.swp
 docs/src/.ipynb_checkpoints
+docs/src/tmp.gif
