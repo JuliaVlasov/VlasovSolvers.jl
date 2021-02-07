@@ -96,7 +96,7 @@ import VlasovSolvers: advection!
 
 advection!(fᵗ, mesh2, ex, 0.5dt)
 
-@showprogress 1 for n in 1:nsteps
+for n in 1:nsteps
 
     gamma1 = Norm(real(f) .* cos.(x), delta1, delta2)
     push!(T,gamma1)
