@@ -12,7 +12,7 @@ function exact!(f, t, x, y)
         f[i,j] = exp(-(xn-1)^2/0.1)*exp(-(yn-1)^2/0.1)
     end
     f
-end</code></pre><pre class="documenter-example-output">Main.ex-rotation.exact!</pre><pre><code class="language-">dev = CPU()
+end</code></pre><pre class="documenter-example-output">Main.ex-rotation.exact!</pre><pre><code class="language-julia">dev = CPU()
 n1, n2 = 256, 256
 mesh1 = OneDGrid(dev, n1, -pi, pi)
 mesh2 = OneDGrid(dev, n2, -pi, pi)
@@ -22,9 +22,8 @@ f = zeros(Float64,(n1,n2))
 anim = @animate for t in LinRange(0,20π,200)
     exact!(f, t, mesh1.points, mesh2.points)
     contour(f, aspect_ratio=:equal, frame=:none, legend=:none)
-end
-gif(anim, &quot;assets/rotation.gif&quot;, fps = 15) # hide
-nothing # hide</code></pre><p><img src="assets/rotation.gif" alt="rotation"/></p><pre><code class="language-julia">x = mesh1.points
+end</code></pre><pre class="documenter-example-output">┌ Info: Saved animation to
+└   fn = &quot;/home/runner/work/VlasovSolvers.jl/VlasovSolvers.jl/docs/build/assets/rotation.gif&quot;</pre><p><img src="../assets/rotation.gif" alt="rotation"/></p><pre><code class="language-julia">x = mesh1.points
 y = mesh2.points
 
 nsteps = 1000
@@ -68,4 +67,4 @@ end
 
 test = zeros(mesh1.len, mesh2.len)
 exact!(test, tf, mesh1.points, mesh2.points)
-println(maximum(abs.(real(f) .- test)))</code></pre><pre class="documenter-example-output">9.742775843086487e-12</pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bump_on_tail/">« Bump On Tail</a><a class="docs-footer-nextpage" href="../vlasov-hmf/">Vlasov-HMF »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Sunday 7 February 2021 19:33">Sunday 7 February 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+println(maximum(abs.(real(f) .- test)))</code></pre><pre class="documenter-example-output">9.744068472969993e-12</pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../bump_on_tail/">« Bump On Tail</a><a class="docs-footer-nextpage" href="../vlasov-hmf/">Vlasov-HMF »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Sunday 7 February 2021 20:21">Sunday 7 February 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
