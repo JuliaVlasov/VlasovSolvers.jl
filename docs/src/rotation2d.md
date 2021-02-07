@@ -18,14 +18,11 @@ Exact solution of the gaussian rotation
 
 """
 function exact!(f, t, x, y)
-
-    
     for (i, xx) in enumerate(x), (j, yy) in enumerate(y)
         xn = cos(t)*xx - sin(t)*yy
         yn = sin(t)*xx + cos(t)*yy
         f[i,j] = exp(-(xn-1)^2/0.1)*exp(-(yn-1)^2/0.1)
     end
-
     f
 end
 ```
@@ -38,12 +35,14 @@ mesh2 = OneDGrid(dev, n2, -pi, pi)
 
 f = zeros(Float64,(n1,n2))
 
-@gif for t in LinRange(0,20π,200)
+anim = @animate for t in LinRange(0,20π,200)
     exact!(f, t, mesh1.points, mesh2.points)
     contour(f, aspect_ratio=:equal, frame=:none, legend=:none)
 end
+gif(anim, "assets/rotation.gif", fps = 15) # hide
 nothing # hide
 ```
+![rotation](assets/rotation.gif)
 
 ```@example rotation
 x = mesh1.points
