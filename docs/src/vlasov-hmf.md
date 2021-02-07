@@ -1,14 +1,12 @@
 # Vlasov-HMF
 
-
-```@example 4
+```@setup hmf
 using LinearAlgebra, QuadGK, Roots, FFTW
 using VlasovSolvers
 using Plots
 ```
 
-```@example 4
-" Compute M₀ by solving F(m) = 0 "
+```@example hmf
 function mag(β, mass)
 
     F(m) = begin
@@ -17,18 +15,17 @@ function mag(β, mass)
         bessel1(x) = g(x, 1, m)
         mass * quadgk(bessel1, 0, π)[1] / quadgk(bessel0, 0, π)[1] - m
     end
-
     find_zero(F, (0, mass))
 end
 ```
 
-```@example 4
+```@example hmf
 function Norm(f::Array{Float64,2}, delta1, delta2)
-   return delta1 * sum(delta2 * sum(real(f), dims=1))
+   delta1 * sum(delta2 * sum(real(f), dims=1))
 end
 ```
 
-```@example 4
+```@example hmf
 """
     hmf_poisson!(fᵗ    :: Array{Complex{Float64},2},
                  mesh1 :: OneDGrid,
@@ -54,19 +51,19 @@ function hmf_poisson!(fᵗ::Array{Complex{Float64},2},
 end
 ```
 
-```@example 4
+```@example hmf
 dev = CPU()
-nsteps = 10000
+nsteps = 1000
 dt = 0.1
 
 mass = 1.0
 T = 0.1
 mesh1 = OneDGrid(dev, 64, -π, π)
-mesh2 = OneDGrid(dev, 64, -8, 8)
+mesh2 = OneDGrid(dev, 128, -6, 6)
 
 n1, delta1 = mesh1.len, mesh1.step
 n2, delta2 = mesh2.len, mesh2.step
-x, v = mesh1.points, transpose(mesh2.points)
+x, v = mesh1.points, mesh2.points'
 ϵ = 0.1
 
 b = 1 / T
@@ -77,27 +74,42 @@ f   = zeros(Complex{Float64}, (n1,n2))
 fᵗ  = zeros(Complex{Float64}, (n2,n1))
 
 f  .= exp.(-b .* ((v.^2 / 2) .- m .* cos.(x)))
+transpose!(fᵗ, f)
+@show size(f), size(fᵗ)
+contour(mesh1.points, mesh2.points, real(fᵗ))
 ```
 
-```@example 4
+```@example hmf
 a   = mass / Norm(real(f), delta1, delta2)
-@.  f =  a * exp(-b * (((v^2) / 2) - m * cos(x))) * (1 + ϵ * cos(x))
+
+@.  f .=  a * exp(-b * (((v^2) / 2) - m * cos(x))) * (1 + ϵ * cos(x))
 
 ex = zeros(Float64,n1)
-hmf_poisson!(f, mesh1, mesh2, ex )
+hmf_poisson!(fᵗ, mesh1, mesh2, ex )
 test = copy(f)
 T = Float64[]
+plot(x, ex)
+```
 
-for n in 1:nsteps
+```@example hmf
+import VlasovSolvers: advection!
+
+advection!(fᵗ, mesh2, ex, 0.5dt)
+
+@showprogress 1 for n in 1:nsteps
 
     gamma1 = Norm(real(f) .* cos.(x), delta1, delta2)
     push!(T,gamma1)
-
-    ### Here compute f...
+    
+    advection!(f, mesh1, v, dt)
+    transpose!(fᵗ, f)
+    hmf_poisson!(fᵗ, mesh1, mesh2, ex)
+    advection!(fᵗ, mesh2, ex, dt)
+    transpose!(f, fᵗ)
 
 end
 
-#Substracting from gamma its long time average
+# Substracting from gamma its long time average
 
 Gamma1 = Norm(real(f) .* cos.(x), delta1, delta2)
 
@@ -106,5 +118,5 @@ T .= T .- Gamma1
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 T .= abs.(T)
 
-plot(t, log.(T), xlabel = "t", ylabel = "|C[f](t)-C[f][T]|")
+plot(t, log.(T), xlabel = "t", ylabel = "|C[f](t)-C[f][T]|");
 ```

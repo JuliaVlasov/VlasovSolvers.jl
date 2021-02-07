@@ -86,10 +86,10 @@ end
 
 
 """
-    advection_v!(f, dt)
+    advection!(f, grid, v, dt; p = 5)
 
-function to advect the distribution function `f` with velocity `v`
-during a time step `dt`. Interpolation method uses bspline periodic.
+function to advect the distribution function `f` with velocity `v` along 
+first `f` dimension during a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Real type version.
 """
 function advection!(f    :: Array{AbstractFloat, 2},
                     grid :: OneDGrid, 
@@ -132,6 +132,56 @@ function advection!(f    :: Array{AbstractFloat, 2},
    end
         
    f .= real(ifft(ft,1))
+    
+end            
+
+"""
+    advection!(f, grid, v, dt; p = 5)
+
+function to advect the distribution function `f` with velocity `v` along 
+first `f` dimension during a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Complex type version.
+"""
+function advection!(f    :: Array{ComplexF64, 2},
+                    grid :: OneDGrid, 
+                    v, 
+                    dt;
+                    p = 5)
+    
+   nx = grid.len
+   nv = length(v)
+   dx = grid.step
+   modes = [2π * i / nx for i in 0:nx-1]
+    
+   # compute eigenvalues of degree p b-spline matrix
+   eig_bspl  = zeros(Float64, nx)
+   eig_bspl .= bspline(p, -div(p+1,2), 0.0)
+   for i in 1:div(p+1,2)-1
+      eig_bspl .+= bspline(p, i - (p+1)÷2, 0.0) * 2 .* cos.(i * modes)
+   end
+   eigalpha = zeros(Complex{Float64}, nx)
+    
+   fft!(f,1)
+    
+   for j in 1:nv
+      alpha = dt * v[j] / dx
+      # compute eigenvalues of cubic splines evaluated 
+      # at displaced points
+      ishift = floor(-alpha)
+      beta   = -ishift - alpha
+      fill!(eigalpha,0.0im)
+      for i in -div(p-1,2):div(p+1,2)
+         eigalpha .+= (bspline(p, i-div(p+1,2), beta) 
+                        .* exp.((ishift+i) * 1im .* modes))
+      end
+          
+      # compute interpolating spline using fft and properties 
+      # of circulant matrices
+      
+      f[:,j] .*= eigalpha ./ eig_bspl
+        
+   end
+        
+   ifft!(f,1)
     
 end            
 
