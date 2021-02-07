@@ -24,6 +24,7 @@ makedocs(modules=[VlasovSolvers],
                   "Bump On Tail"   => "bump_on_tail.md",
                   "Rotation 2D"    => "rotation2d.md",
                   "Vlasov-HMF"     => "vlasov-hmf.md",
+                  "Two-stream instability" => "tsi.md",
                   "Contents"       => "contents.md"])
 
 deploydocs(;
