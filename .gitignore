@@ -4,4 +4,4 @@
 deps/deps.jl
 Manifest.toml
 *.swp
-notebooks/.ipynb_checkpoints
+docs/src/.ipynb_checkpoints
