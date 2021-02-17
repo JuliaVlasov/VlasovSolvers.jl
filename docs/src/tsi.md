@@ -76,8 +76,5 @@ anim = @animate for it in 1:nt
 
 end every 100
 
-gif(anim, "assets/tsi.gif", fps = 15) # hide
-nothing # hide
+gif(anim, "assets/tsi.gif", fps = 15)
 ```
-
-![rotation](assets/tsi.gif)
