@@ -1,6 +1,6 @@
 name = "VlasovSolvers"
 uuid = "e440c818-da21-11e8-37de-9dd2e420edb6"
-authors = ["Pierre Navaro <pierre.navaro@math.cnrs.fr>"]
+authors = "JuliaVlasov"
 version = "0.1.0"
 
 [deps]
