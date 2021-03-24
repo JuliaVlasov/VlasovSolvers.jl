@@ -13,6 +13,8 @@ vgrid = OneDGrid(dev, nv, vmin, vmax)
 
 df = DistributionFunction( xgrid, vgrid )
 
+two_stream_instability!(df)
+
 contour(vgrid.points, xgrid.points, df.values)</code></pre><pre><code class="language-">&quot;&quot;&quot;
     compute_e(f)
 
@@ -39,8 +41,6 @@ end
 
 import VlasovSolvers: advection!
 
-two_stream_instability!(df)
-
 f = copy(df.values)
 fᵗ = transpose(f) |&gt; collect
 
@@ -48,8 +48,8 @@ ex = compute_e(df)
 
 advection!(fᵗ, vgrid, ex, 0.5dt)
 
-dt = 0.005     # Time step
-nt = 10000
+dt = 0.01     # Time step
+nt = 5000
 v = collect(vgrid.points)
 
 anim = @animate for it in 1:nt
@@ -60,8 +60,8 @@ anim = @animate for it in 1:nt
     transpose!(fᵗ, f)
     advection!(fᵗ, vgrid, ex, dt)
     transpose!(f, fᵗ)
-    contourf(vgrid.points, xgrid.points, f, clims=(0,5))
+    contourf(vgrid.points, xgrid.points, f, clims=(-1,5))
 
 end every 100
 
-gif(anim, &quot;assets/tsi.gif&quot;, fps = 15)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../vlasov-hmf/">« Vlasov-HMF</a><a class="docs-footer-nextpage" href="../contents/">Contents »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 22 February 2021 11:21">Monday 22 February 2021</span>. Using Julia version 1.5.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+gif(anim, &quot;assets/tsi.gif&quot;, fps = 15)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../vlasov-hmf/">« Vlasov-HMF</a><a class="docs-footer-nextpage" href="../contents/">Contents »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Wednesday 24 March 2021 15:31">Wednesday 24 March 2021</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
