@@ -5,6 +5,21 @@ using Plots, Statistics, FFTW, LinearAlgebra
 using VlasovSolvers
 ```
 
+## Parameters
+```math
+\epsilon = 0.01, \xi = 0.90, v_0 = 2.4
+```
+
+## Distribution function
+
+```math
+f(x, v) = (1 + \epsilon (( \cos (4 \pi x) + \cos (6 \pi x)) / 1.2 
++ \cos (2 \pi x)))  \frac{1}{\sqrt{2 \pi}}  \frac{2-2 \xi}{3-2 \xi}
+(1 + \frac{5 * v^2}{1-\xi})  \exp (- \frac{v^2}{2})
+```
+
+## Simulation
+
 ```@example tsi
 dev = CPU()                  # device
 nx, nv = 320, 64             # grid resolution
