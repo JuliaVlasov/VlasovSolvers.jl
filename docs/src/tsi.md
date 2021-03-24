@@ -1,6 +1,6 @@
 # Two-stream instability
 
-```@setup tsi
+```@example tsi
 using Plots, Statistics, FFTW, LinearAlgebra
 using VlasovSolvers
 ```
