@@ -78,7 +78,7 @@ anim = @animate for it in 1:nsteps
     transpose!(f, fᵗ)
     contourf(vgrid.points, xgrid.points, f, clims=(-0.1,0.4))
 
-end every 100
+end every 10
 
 gif(anim, "assets/tsi.gif", fps = 15)
 ```
