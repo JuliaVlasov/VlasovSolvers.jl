@@ -5,21 +5,6 @@ using Plots, Statistics, FFTW, LinearAlgebra
 using VlasovSolvers
 ```
 
-## Parameters
-```math
-\epsilon = 0.01, \xi = 0.90, v_0 = 2.4
-```
-
-## Distribution function
-
-```math
-f(x, v) = (1 + \epsilon (( \cos (4 \pi x) + \cos (6 \pi x)) / 1.2 
-+ \cos (2 \pi x)))  \frac{1}{\sqrt{2 \pi}}  \frac{2-2 \xi}{3-2 \xi}
-(1 + \frac{5 * v^2}{1-\xi})  \exp (- \frac{v^2}{2})
-```
-
-## Simulation
-
 ```@example tsi
 dev = CPU()                  # device
 nx, nv = 320, 64             # grid resolution
@@ -27,15 +12,22 @@ stepper = StrangSplitting()  # timestepper
 dt = 0.1                     # timestep
 nsteps = 1000                # total number of time-steps
 
-xmin, xmax = 0, 20π          # X Domain length (m)
-vmin, vmax = -8, 8           # V Domain length (m)
+kx = 0.2
+eps = 0.001
+v0 = 2.4
+
+xmin, xmax = 0, 2π/kx   # X Domain length 
+vmin, vmax = -10, 10    # V Domain length
 
 xgrid = OneDGrid(dev, nx, xmin, xmax)
 vgrid = OneDGrid(dev, nv, vmin, vmax)
 
 df = DistributionFunction( xgrid, vgrid )
 
-two_stream_instability!(df)
+for (i,x) in enumerate(xgrid.points), (j,v) in enumerate(vgrid.points)
+    df.values[i, j] = (1 + eps*cos(kx*x))*0.5/sqrt(2pi)*(
+                   exp(-.5*(v - v0)^2) + exp(-.5*(v + v0)^2))
+end
 
 contour(vgrid.points, xgrid.points, df.values)
 ```
@@ -74,11 +66,9 @@ ex = compute_e(df)
 
 advection!(fᵗ, vgrid, ex, 0.5dt)
 
-dt = 0.01     # Time step
-nt = 5000
 v = collect(vgrid.points)
 
-anim = @animate for it in 1:nt
+anim = @animate for it in 1:nsteps
 
     advection!(f, xgrid, v, dt)
     df.values .= f
@@ -86,7 +76,7 @@ anim = @animate for it in 1:nt
     transpose!(fᵗ, f)
     advection!(fᵗ, vgrid, ex, dt)
     transpose!(f, fᵗ)
-    contourf(vgrid.points, xgrid.points, f, clims=(-1,5))
+    contourf(vgrid.points, xgrid.points, f, clims=(-0.1,0.4))
 
 end every 100
 
