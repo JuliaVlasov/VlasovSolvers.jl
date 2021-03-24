@@ -2,7 +2,6 @@
 
 ```@setup tsi
 using Plots, Statistics, FFTW, LinearAlgebra
-using ProgressMeter
 using VlasovSolvers
 ```
 
