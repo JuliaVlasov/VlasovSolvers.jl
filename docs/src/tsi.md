@@ -21,6 +21,8 @@ vgrid = OneDGrid(dev, nv, vmin, vmax)
 
 df = DistributionFunction( xgrid, vgrid )
 
+two_stream_instability!(df)
+
 contour(vgrid.points, xgrid.points, df.values)
 ```
 
@@ -51,8 +53,6 @@ end
 
 import VlasovSolvers: advection!
 
-two_stream_instability!(df)
-
 f = copy(df.values)
 fᵗ = transpose(f) |> collect
 
@@ -60,8 +60,8 @@ ex = compute_e(df)
 
 advection!(fᵗ, vgrid, ex, 0.5dt)
 
-dt = 0.005     # Time step
-nt = 10000
+dt = 0.01     # Time step
+nt = 5000
 v = collect(vgrid.points)
 
 anim = @animate for it in 1:nt
@@ -72,7 +72,7 @@ anim = @animate for it in 1:nt
     transpose!(fᵗ, f)
     advection!(fᵗ, vgrid, ex, dt)
     transpose!(f, fᵗ)
-    contourf(vgrid.points, xgrid.points, f, clims=(0,5))
+    contourf(vgrid.points, xgrid.points, f, clims=(-1,5))
 
 end every 100
 
