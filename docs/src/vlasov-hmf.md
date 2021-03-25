@@ -1,6 +1,6 @@
 # Vlasov-HMF
 
-```@setup hmf
+```@example hmf
 using LinearAlgebra, QuadGK, Roots, FFTW
 using VlasovSolvers
 using Plots
