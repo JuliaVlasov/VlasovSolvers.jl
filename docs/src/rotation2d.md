@@ -4,7 +4,7 @@
 \frac{df}{dt} +  (y \frac{df}{dx} - x \frac{df}{dy}) = 0
 ```
 
-```@setup rotation
+```@example rotation
 using Plots
 using VlasovSolvers
 using FFTW, LinearAlgebra
