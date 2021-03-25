@@ -18,14 +18,10 @@ with a neutralizing background.
 - [Vlasov Equation - Wikipedia](https://en.wikipedia.org/wiki/Vlasov_equation)
 
 
-```@setup 1
-using Plots
-```
-
 ## Input parameters
 
 ```@example 1
-using VlasovSolvers
+using VlasovSolvers, Plots
 
 dev = CPU()                  # device
 nx, nv = 64, 64              # grid resolution
