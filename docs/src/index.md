@@ -68,35 +68,35 @@ the velocity integration of $\partial_t f + E\cdot \nabla_v f=0$ leads to $\frac
 $\frac{d}{dt} E(t, x) = 0$ and $E(t, x)=E(0, x)$ along this step. 
 
 
-This is the Lie-Trotter splitting which is a first order approximatoin
+This is the Lie-Trotter splitting which is a first order approximation
 of the solution $f(t)$. High order splittings can be derived by
 choosing a sequence of coefficients $(a_i, b_i)$ so that
 ```math
 \varphi_t(f_0) \approx \Pi_{i} \;\;  \Big(\varphi^v_{a_i t} \circ \varphi^x_{b_i t}\Big)(f_0).  
 ```
-The splitting enables to reduce the original problem into several
+The splitting enables us to reduce the original problem into several
 smaller problems which are easier to solve. Indeed, in the Vlasov
-case, we are lead to solve one dimensional linear transport equations
+case, we are led to solve one dimensional linear transport equations
 which we choose to solve using the semi-Lagrangian method. 
 The basics of the semi-Lagrangian method are recalled in the
 following. 
 
 We are faced with multidimensional linear transport equation which can be split again 
 into one dimensional linear transport equation. Indeed, for the part 
-$\partial_t f + v\cdot \nabla_x f = 0$, we can  split exactly this $d$-dimensional transport equation into 
+$\partial_t f + v\cdot \nabla_x f = 0$, we can split exactly this $d$-dimensional transport equation into 
 $$
-\partial_t + v_\alpha \partial_{x_\alpha} f = 0, \;\; \alpha=1, \dots, d,   
+\partial_t + v_\alpha \partial_{x_\alpha} f = 0, \;\; \alpha=1, \ldots, d,   
 $$
 where $x_\alpha$ (resp. $v_\alpha$) denotes the $\alpha$-th component of $x$ (resp. $v$). 
 Similarly, we can  split exactly the part $\partial_t f + E\cdot \nabla_v f = 0$ 
 into $d$ one dimensional linear transport equations 
 $$
-\partial_t + E_\alpha \partial_{v_\alpha} f = 0, \;\; \alpha=1, \dots, d,    
+\partial_t + E_\alpha \partial_{v_\alpha} f = 0, \;\; \alpha=1, \ldots, d,    
 $$
 where $E_\alpha$ denotes the $\alpha$-th compoent of the electric field $E$. 
 
 ## Semi-Lagrangian method 
-According to the previous section, we are lead to solve the following linear transport equation 
+According to the previous section, we are led to solve the following linear transport equation 
 ```math
 \partial_t f + a \partial_x f=0, f(t=0, x) = f_0(x), x\in [0, L], 
 ```
@@ -107,13 +107,13 @@ We know that the exact solution of $\partial_t f + a \partial_x f=0$ can be writ
 ```math
 f(t, x) = f_0(x-at), 
 ```
-or if we consider the solution from  $s$ to $t$`, we
+or if we consider the solution from time $s$ to $t$`, we
 have
 ```math
 f(t, x) = f(s, x-a(t-s)).  
 ```
 The property that $f$ is constant along the characteristics
-paves the way of the semi-Lagrangian method. Indeed, let consider
+paves the way of the semi-Lagrangian method. Indeed, let's consider
 a time discretization $t_n = n\Delta t, n\in \mathbb{N}$,
 $\Delta t>0$ and a space discretization
 $x_i=i\Delta x, i\in N_x, \Delta x>0, \Delta x=L/N_x$
@@ -124,7 +124,7 @@ f(t_{n+1}, x_i) = f(t_n, x_i-a \Delta t).
 ```
 We assume that $f(t_n, x_i)$ are all known, we have to
 compute $f(t_n, x_i-a \Delta t)$ and this is done by a
-standard interpolation method. For Vlasov problem, high order
+standard interpolation method. For the Vlasov problem, high order
 interpolation are required (citer Francis, Sonnen, Michel...). 
 Within the framework of this package, we have chosen 
 piecewise polynomial interpolation of two kinds:
@@ -139,7 +139,7 @@ f(t_n, x) = \sum_{i=0}^k f(t_n, x_i) L_{i,p}(x),
 where 
 ```math
 L_{i,p}(x) = \Pi_{0\leq k\leq p, k\neq i} \frac{x-x_k}{x_i-x_k}, \;\;
-\mathrm{ for } 0\leq i\leq p.  
+\mathrm{ for }\; 0\leq i\leq p.  
 ```
 For the B-spline interpolation of order $p$, we have
 ```math
@@ -164,7 +164,7 @@ solution of a linear system to solve (citer De Boor, Michel, ...).
 
 ## Numerical method for Poisson equation
 
-The Poisson equation is solved using Fourier techniques.
+The Poisson equation with periodic boundary condition is solved using Fourier techniques.
 First, we consider the following DFT (Discrete Fourier Transform) of a
 $L-$periodic function $g$ defined on a mesh of $N_x$ points such that
 $x_j=j \Delta x, \Delta x=L/N_x, 0\leq j\leq N_x-1$ 
@@ -238,7 +238,7 @@ equation
 ```math
 \partial_t f + E^\star\partial_v f = 0, 
 ```
-using the semi-Lagrangian method $f^{n+1}_{i, j} approx f^n(x_i, v_j-E^\star_i \Delta t)$. 
+using the semi-Lagrangian method $f^{n+1}_{i, j} \approx f^n(x_i, v_j-E^\star_i \Delta t)$. 
 
 The extension to the well-known Strang  splitting (which is second order accurate in time) can be written as follows. 
 
