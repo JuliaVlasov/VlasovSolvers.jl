@@ -10,14 +10,12 @@ struct Fourier <: AbstractMethod
         nx  = meshx.len
         dx  = meshx.step
         Lx  = meshx.stop - meshx.start
-        kx  = zeros(Float64, nx)
-        kx .= 2π/Lx .* [0:nx÷2-1;-nx÷2:-1]
+        kx  = 2π/Lx .* [0:nx÷2-1;-nx÷2:-1]
 
         nv  = meshv.len
         dv  = meshv.step
         Lv  = meshv.stop - meshv.start
-        kv  = zeros(Float64, nv)
-        kv .= 2π/Lv .* [0:nv÷2-1;-nv÷2:-1]
+        kv  = 2π/Lv .* [0:nv÷2-1;-nv÷2:-1]
 
         new( kx, kv)
 
@@ -31,7 +29,7 @@ function advection_v!(fᵗ  :: Array{ComplexF64,2},
 		      e   :: Vector{ComplexF64}, 
 		      dt  :: Float64 )
     fft!(fᵗ, 1)
-    fᵗ .= fᵗ .* exp.(-1im * dt * adv.kv * transpose(e))
+    @. fᵗ *= exp(-1im * dt * adv.kv * $transpose(e))
     ifft!(fᵗ, 1)
 
 end
