@@ -259,7 +259,7 @@ equation
 ```math
 \partial_t f + E^\star\partial_v f = 0, 
 ```
-using the semi-Lagrangian method $f^{\star\star}_{i, j} approx f^n(x_i, v_j-E^\star_i \Delta t)$. 
+using the semi-Lagrangian method $f^{\star\star}_{i, j} \approx f^n(x_i, v_j-E^\star_i \Delta t)$. 
   
 + Compute $f^\star_{i,j}$ solving
 ```math
