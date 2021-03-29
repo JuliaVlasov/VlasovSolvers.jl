@@ -29,7 +29,7 @@ for (i,x) in enumerate(xgrid.points), (j,v) in enumerate(vgrid.points)
                    exp(-.5*(v - v0)^2) + exp(-.5*(v + v0)^2))
 end
 
-contour(vgrid.points, xgrid.points, df.values)
+contourf(vgrid.points, xgrid.points, df.values)
 ```
 
 ```@example tsi
