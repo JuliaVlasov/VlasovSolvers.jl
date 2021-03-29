@@ -43,5 +43,5 @@ sol = solve!(prob, stepper, dt, nsteps )
 ```
 
 ```@example 3
-plot(t, sol, label=L"\frac{1}{2} \log(∫e²dx)")
+plot(t, sol, label=L"\frac{1}{2} \log(\int e^2dx)")
 ```

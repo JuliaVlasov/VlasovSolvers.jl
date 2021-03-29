@@ -32,24 +32,24 @@ export solve!
     solve!( problem, stepper, dt, nsteps)
 
 """
-function solve!( problem::VlasovProblem{BSLSpline}, stepper::StrangSplitting, dt, nsteps )
-
-  nrj = Float64[]
+function solve!( problem::VlasovProblem{BSLSpline}, stepper::StrangSplitting, dt, nsteps)
   
+  nrj = Vector{Float64}(undef, nsteps)
+
   for it in 1:nsteps
-        
-     advection_x!( problem.f, 0.5dt)
-     sol = advection_v!( problem.f, dt)
-     push!(nrj, sol)
-     advection_x!( problem.f, 0.5dt)
-        
+
+     advection_x!( problem.f, 0.5dt, problem.method.p)
+     sol = advection_v!( problem.f, dt, problem.method.p)
+     nrj[it] = sol
+     advection_x!( problem.f, 0.5dt, problem.method.p)
+
   end
                   
   nrj
 
 end
 
-function solve!( problem::VlasovProblem{Fourier}, stepper :: StrangSplitting, dt, nsteps)
+function solve!( problem::VlasovProblem{Fourier}, stepper::StrangSplitting, dt, nsteps)
 
     # Initialize distribution function
     x = problem.f.xgrid.points |> collect
@@ -77,16 +77,16 @@ function solve!( problem::VlasovProblem{Fourier}, stepper :: StrangSplitting, dt
     ρ̂ = fft(ρ)./modes
     e .= vec(real(ifft(-1im .* ρ̂)))
     
-    nrj = Float64[]
+    nrj = Vector{Float64}(undef, nsteps)
     
-    for i in 1:nsteps
+    for it in 1:nsteps
 
-        advection_v!(fᵀ, problem.method, e,  0.5dt)
+        advection_v!(fᵀ, problem.method, e, 0.5dt)
         transpose!(f,fᵀ)
         advection_x!( f, problem.method, e, v, dt)
-        push!(nrj, log(sqrt((sum(e.^2)) * dx)))
+        nrj[it] = log(sqrt((sum(e.^2)) * dx))
         transpose!(fᵀ,f)
-        advection_v!(fᵀ, problem.method, e,  0.5dt)
+        advection_v!(fᵀ, problem.method, e, 0.5dt)
 
     end
 

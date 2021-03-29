@@ -67,7 +67,7 @@ end
 """
     bspline(p, j, x)
 
-Return the value at x in [0,1[ of the B-spline with integer nodes of degree p with support starting at j.
+Return the value at x in [0,1] of the B-spline with integer nodes of degree p with support starting at j.
 Implemented recursively using the [De Boor's Algorithm](https://en.wikipedia.org/wiki/De_Boor%27s_algorithm)
 
 ```math
@@ -86,24 +86,20 @@ B_{i,p}(x) := \\frac{x - t_i}{t_{i+p} - t_i} B_{i,p-1}(x)
 """
 function bspline(p::Int, j::Int, x::Float64)
    if p == 0
-       if j == 0
-           return 1.0
-       else
-           return 0.0
-       end
+      j == 0 ? (return 1.0) : (return 0.0)
    else
-       w = (x - j) / p
-       w1 = (x - j - 1) / p
+      w = (x - j) / p
+      w1 = (x - j - 1) / p
    end
-   return (w * bspline(p - 1, j, x) + (1 - w1) * bspline(p - 1, j + 1, x))
+   return w * bspline(p - 1, j, x) + (1 - w1) * bspline(p - 1, j + 1, x)
 end
 
 
 """
     advection!(f, grid, v, dt; p = 5)
 
-function to advect the distribution function `f` with velocity `v` along 
-first `f` dimension during a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Real type version.
+Advect the distribution function `f` with velocity `v` along first `f` dimension
+with a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Real type version.
 """
 function advection!(f    :: Array{AbstractFloat, 2},
                     grid :: OneDGrid, 
@@ -132,7 +128,7 @@ function advection!(f    :: Array{AbstractFloat, 2},
       # at displaced points
       ishift = floor(-alpha)
       beta   = -ishift - alpha
-      fill!(eigalpha,0.0im)
+      fill!(eigalpha, 0.0im)
       for i in -div(p-1,2):div(p+1,2)
          eigalpha .+= (bspline(p, i-div(p+1,2), beta) 
                         .* exp.((ishift+i) * 1im .* modes))
@@ -152,8 +148,8 @@ end
 """
     advection!(f, grid, v, dt; p = 5)
 
-function to advect the distribution function `f` with velocity `v` along 
-first `f` dimension during a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Complex type version.
+Advect the distribution function `f` with velocity `v` along first `f` dimension
+with a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Complex type version.
 """
 function advection!(f    :: Array{ComplexF64, 2},
                     grid :: OneDGrid, 
@@ -227,31 +223,28 @@ function compute_e( f::DistributionFunction )
    xmin = f.xgrid.start
    xmax = f.xgrid.stop
    k =  2π / (xmax - xmin)
-   modes = zeros(Float64, nx)
-   modes .= k * vcat(0:div(nx,2)-1,-div(nx,2):-1)
+   modes = k * vcat(0:div(nx,2)-1, -div(nx,2):-1)
    modes[1] = 1.0
-   rhok = fft(rho)./modes
-   rhok .*= -1im
-   ifft!(rhok)
-   real(rhok)
+   rhok = fft(rho) ./ modes .* (-1im)
+   real(ifft!(rhok))
 
 end
 
 
-function advection_x!( f :: DistributionFunction, dt) 
+function advection_x!( f :: DistributionFunction, dt, p)
 
-    advection!(f.values, f.xgrid, collect(f.vgrid.points), dt)
+    advection!(f.values, f.xgrid, f.vgrid.points, dt; p)
 
 end
 
-function advection_v!( f :: DistributionFunction, dt)
+function advection_v!( f :: DistributionFunction, dt, p)
 
     dx = f.xgrid.step
     nx = f.xgrid.len
     e  = compute_e(f)
     nrj = 0.5*log(sum(e.*e)*dx)
     fᵗ = collect(transpose(f.values))
-    advection!(fᵗ, f.vgrid, e, dt)
+    advection!(fᵗ, f.vgrid, e, dt; p)
     f.values .= transpose(fᵗ)
     nrj
 
