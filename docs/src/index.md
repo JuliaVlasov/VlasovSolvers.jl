@@ -149,17 +149,17 @@ where
 ```math
 B_{i,0}(x) := \left\{
 \begin{matrix}
-1 & \mathrm{if}  \quad t_i \leq x < t_{i+1} \\
+1 & \mathrm{if}  \quad \tau_i \leq x < \tau_{i+1} \\
 0 & \mathrm{otherwise} 
 \end{matrix}
 \right.
 ```
 ```math
-B_{i,p}(x) := \frac{x - t_i}{t_{i+p} - t_i} B_{i,p-1}(x) 
-+ \frac{t_{i+p+1} - x}{t_{i+p+1} - t_{i+1}} B_{i+1,p-1}(x).
+B_{i,p}(x) := \frac{x - \tau_i}{t_{i+p} - \tau_i} B_{i,p-1}(x) 
++ \frac{\tau_{i+p+1} - x}{\tau_{i+p+1} - \tau_{i+1}} B_{i+1,p-1}(x).
 ```
 and the coefficients $(\eta_i)_{i=0, \dots, N_x-1}$ are
-solution of a linear system to solve (citer De Boor, Michel, ...).
+solution of a linear system to solve (cite De Boor, Michel, ...).
 
 
 ## Numerical method for Poisson equation
