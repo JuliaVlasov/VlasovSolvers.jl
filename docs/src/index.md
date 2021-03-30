@@ -99,7 +99,10 @@ following.
 
 We are faced with multidimensional linear transport equation which can be split again 
 into one dimensional linear transport equation. Indeed, for the part 
-$\partial_t f + v\cdot \nabla_x f = 0$, we can split exactly this $d$-dimensional transport equation into 
+```math
+\partial_t f + v\cdot \nabla_x f = 0,
+```
+we can split exactly this $d$-dimensional transport equation into 
 
 ```math
 \partial_t + v_\alpha \partial_{x_\alpha} f = 0, \;\; \alpha=1, \ldots, d,   
