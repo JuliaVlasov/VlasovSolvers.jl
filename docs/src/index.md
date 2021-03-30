@@ -84,15 +84,18 @@ following.
 We are faced with multidimensional linear transport equation which can be split again 
 into one dimensional linear transport equation. Indeed, for the part 
 $\partial_t f + v\cdot \nabla_x f = 0$, we can split exactly this $d$-dimensional transport equation into 
-$$
+
+```math
 \partial_t + v_\alpha \partial_{x_\alpha} f = 0, \;\; \alpha=1, \ldots, d,   
-$$
+```
 where $x_\alpha$ (resp. $v_\alpha$) denotes the $\alpha$-th component of $x$ (resp. $v$). 
 Similarly, we can  split exactly the part $\partial_t f + E\cdot \nabla_v f = 0$ 
 into $d$ one dimensional linear transport equations 
-$$
+
+```math
 \partial_t + E_\alpha \partial_{v_\alpha} f = 0, \;\; \alpha=1, \ldots, d,    
-$$
+```
+
 where $E_\alpha$ denotes the $\alpha$-th compoent of the electric field $E$. 
 
 ## Semi-Lagrangian method 
