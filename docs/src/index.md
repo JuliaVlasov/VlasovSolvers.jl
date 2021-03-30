@@ -1,4 +1,4 @@
-# VlasovSolvers.jl Documentation
+# VlasovSolvers.jl 
 
 *First draft of a Vlasov solvers Julia suite.*
 
