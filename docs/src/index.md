@@ -61,12 +61,28 @@ A very interesting aspect of this splitting comes from the fact that each subpar
 can be solved exactly in time. Indeed, the solution at time $t$ of $\partial_t f + v\cdot \nabla_x f=0$ 
 with a given initial condition $f(0, x, v)=f_0(x, v)$ is $f(t, x, v)=f_0(x-vt, v)$. 
 For a given electric field $E(t, x)$ (typically obtained from the solution of the Poisson equation), the  
-solution at time $t$ of $\partial_t f + E\cdot \nabla_v f=0$ 
-with a given initial condition $f(0, x, v)=f_0(x, v)$ is $f(t, x, v)=f_0(x, v-E(0, x) t)$. Indeed, it is worth mentioning 
-that the electric field $E$ does not depend on time during this step. Since $E$ only depends on $\int f dv$, 
-the velocity integration of $\partial_t f + E\cdot \nabla_v f=0$ leads to $\frac{d}{dt}\int f dv = 0$ so that 
-$\frac{d}{dt} E(t, x) = 0$ and $E(t, x)=E(0, x)$ along this step. 
+solution at time $t$ of 
 
+```math
+\partial_t f + E\cdot \nabla_v f=0
+```
+
+with a given initial condition $f(0, x, v)=f_0(x, v)$ is 
+
+```math 
+f(t, x, v)=f_0(x, v-E(0, x) t). 
+```
+Indeed, it is worth mentioning that the electric field $E$ does not
+depend on time during this step. Since $E$ only depends on $\int f
+dv$, the velocity integration of 
+```math
+\partial_t f + E\cdot \nabla_v f=0
+```
+leads to 
+```math
+\frac{d}{dt}\int f dv = 0
+```
+so that $\frac{d}{dt} E(t, x) = 0$ and $E(t, x)=E(0, x)$ along this step.
 
 This is the Lie-Trotter splitting which is a first order approximation
 of the solution $f(t)$. High order splittings can be derived by
@@ -158,7 +174,7 @@ B_{i,0}(x) := \left\{
 \right.
 ```
 ```math
-B_{i,p}(x) := \frac{x - \tau_i}{t_{i+p} - \tau_i} B_{i,p-1}(x) 
+B_{i,p}(x) := \frac{x - \tau_i}{\tau_{i+p} - \tau_i} B_{i,p-1}(x) 
 + \frac{\tau_{i+p+1} - x}{\tau_{i+p+1} - \tau_{i+1}} B_{i+1,p-1}(x).
 ```
 and the coefficients $(\eta_i)_{i=0, \dots, N_x-1}$ are
