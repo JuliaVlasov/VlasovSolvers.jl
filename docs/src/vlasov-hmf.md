@@ -1,18 +1,3 @@
----
-jupyter:
-  jupytext:
-    formats: ipynb,md
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.13.1
-  kernelspec:
-    display_name: Julia 1.6.3
-    language: julia
-    name: julia-1.6
----
-
 In this example we will show how the VlasovSolvers package can be used to solve the Vlasov equations in the Hamiltonian 
 Mean Field framework (usually called Vlasov-HMF).
 
@@ -20,27 +5,27 @@ Just like the Vlasov-Poisson equations are the Vlasov-Maxwell equations where fi
 Vlasov-HMF equations are the Vlasov-Poisson equations where the field equations are further simplified.
 
 Recall the Vlasov equations in its most simplified case (i.e. no source term):
-$$
+```math
 \partial_t f + v\cdot \partial_x f + E\cdot \partial_v f = 0
-$$
+```
 
 The quantity $E$ is the electric field, defined in the Poisson framework by
-$$
+```math
 -\Delta \phi = 1 - \rho,\ E = -\nabla \phi,\ \rho(t,x) = \int f(t,x,v)dv
-$$
+```
 
 The Poisson equation $-\Delta \phi = 1 - \rho$ on a periodic space-domain $[0, L]$ is usually solved by means of a Fourier
 transform. In the discrete case this is performed by a DFT, involving $N_x$ Fourier modes in total (where $N_x$ is the
 number of spatial nodes). In the HMF framework, we apply the same idea but restrict ourselves to the Fourier modes 
 corresponding to the frequencies $k=\pm 1$ (the mode corresponding to $k=0$ is zero since $\phi$ has a zero average).
 
-```julia
+```@example hmf
 using LinearAlgebra, QuadGK, Roots, FFTW
 using VlasovSolvers
 using Plots
 ```
 
-```julia
+```@example hmf
 function mag(β, mass)
 
     F(m) = begin
@@ -53,7 +38,7 @@ function mag(β, mass)
 end
 ```
 
-```julia
+```@example hmf
 function Norm(f::Array{Float64,2}, delta1, delta2)
     delta1 * sum(delta2 * sum(real(f), dims=1))
 end
@@ -62,7 +47,7 @@ end
 As explained above, we compute the electric field `ex` in a similar manner as in Poisson case, but the kernel
 corresponding to solving the Laplacian in periodic space domain is restricted to its modes $k=\pm 1$.
 
-```julia
+```@example hmf
 """
     hmf_poisson!(fᵗ    :: Array{Complex{Float64},2},
                  mesh1 :: OneDGrid,
@@ -88,7 +73,7 @@ function hmf_poisson!(fᵗ::Array{Complex{Float64},2},
 end
 ```
 
-```julia
+```@example hmf
 dev = CPU()
 nsteps = 1000
 dt = 0.1
@@ -116,7 +101,7 @@ transpose!(fᵗ, f)
 contour(mesh1.points, mesh2.points, real(fᵗ))
 ```
 
-```julia
+```@example hmf
 a   = mass / Norm(real(f), delta1, delta2)
 
 @.  f .=  a * exp(-b * (((v^2) / 2) - m * cos(x))) * (1 + ϵ * cos(x))
@@ -128,7 +113,7 @@ T = Float64[]
 plot(x, ex)
 ```
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 advection!(fᵗ, mesh2, ex, 0.5dt)
@@ -168,7 +153,7 @@ We now compare our numerical results with theoretical ones from [Sonnendrücker,
 
 ### $k=0.5$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -211,7 +196,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 period = 2π / 1.4156
@@ -220,7 +205,7 @@ minElandau, maxElandau = extrema(log.(Elandau))
 vline(start .+ [0, 5, 10].*period, ls=:dash)
 
 plot!(t, log.(Elandau), xlabel = "t", minorgrid=true, label="log(energy)")
-plot!(x-> - 0.1533x - 3.2, label="y = -0.1533x - 3.2")
+plot!(x-> - 0.1533x - 5.5, label="y = -0.1533x - 5.5")
 # Check "periods" of energy : theoretically they are ≈2π/1.4156. 
 # Each period in the energy is materialized by 2 bumps.
 
@@ -231,7 +216,7 @@ plot!(legend=:topright)
 
 ### $k=0.4$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -274,7 +259,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 period = 2π / 1.2850
@@ -297,7 +282,7 @@ plot!(legend=:topright)
 
 ### $k=0.2,\ v_0 = 1.3$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -341,7 +326,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 plot(t, log.(Etsi), xlabel = "t", minorgrid=true, label="log(energy)")
@@ -359,7 +344,7 @@ plot!(legend=:bottomright)
 
 ### $k=0.2,\ v_0 = 3.0$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -402,7 +387,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example **hmf**
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 plot(t, log.(Etsi), xlabel = "t", minorgrid=true, label="log(energy)")
