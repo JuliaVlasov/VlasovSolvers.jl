@@ -1,7 +1,6 @@
 using Sobol
 using Roots
-using Cubature
-using ProgressMeter
+# using ProgressMeter
 using Random
 using Distributions
 using SparseArrays
@@ -21,11 +20,11 @@ end
 
 function samples(nsamples, kx, α::Float64, μ::Float64, β::Float64)
     #=
-    Sample distribution defined by fx in space and a gaussian of variance beta and mean μ in velocity.
+    Sample distribution defined by 1+\alpha \cos(kx * x) in space and a gaussian of variance beta and mean μ in velocity.
     =#
     x0 = Array{Float64}(undef, nsamples)
     seq = SobolSeq(1)
-    @showprogress for i in 1:nsamples
+    for i in 1:nsamples
         r = Sobol.next!(seq)
         resx = find_zero(x-> x + α/kx * sin(kx*x) - r[1]*2π/kx, 0.0)
         x0[i] = resx
@@ -85,27 +84,22 @@ end
 """
 compute rho, charge density (ie int f dv)
 """
-function compute_rho( p, m )
+function compute_rho(p, m)
 
     nx = m.len
     dx = m.step
-    rho = zeros(nx)
+    ρ = zeros(nx)
  
     for ipart=1:p.nbpart
-       xp = p.x[ipart]
-       i = Int(floor(Real(xp) / dx) + 1) #number of the cell with the particule
-       dum = p.wei[ipart] / dx
-       mx_i = (i-1) * dx
-       mx_j = i * dx
-       a1 = (mx_j-xp) * dum
-       a2 = (xp-mx_i) * dum
-       rho[i]   += a1
-       rho[i < nx ? i+1 : 1] += a2
+        idxonmesh = Int64(fld(p.x[ipart], dx)) + 1
+        t = (p.x[ipart] - (idxonmesh-1) * dx) / dx
+        ρ[idxonmesh] += p.wei[ipart] * (1-t)
+        ρ[idxonmesh < nx ? idxonmesh+1 : 1] += p.wei[ipart] * t   
     end
-    rho ./= dx
+    ρ ./= dx
  
-    rho_total  = sum(rho) * dx / m.stop
-    return rho, rho_total
+    ρ_tot  = sum(ρ) * dx / m.stop
+    return ρ, ρ_tot
 end
 
 function compute_phi(rho, rho_total, mesh)
@@ -136,4 +130,16 @@ function compute_int_E(p, mesh)
         s += E[ide]^2
     end
     return s * mesh.step
+end
+
+
+function PIC_step(p, mesh, dt)
+    energy_cine = 1 / 2 * sum(p.wei .* (p.v.^2))
+
+    # Use a 3-step splitting, to be of order 2.
+    update_velocities!(p, 1, dt/2, 2π/mesh.stop) # 1 because we are in HMF framework
+    update_positions!(p, mesh, dt)
+    phi_t, der_phi_t = update_velocities!(p, 1, dt/2, 2π/mesh.stop) # 1 because we are in HMF framework
+
+    return sum(p.wei .* phi_t), compute_int_E(p, mesh), sum(der_phi_t.^2) * mesh.stop / length(p.x)
 end
