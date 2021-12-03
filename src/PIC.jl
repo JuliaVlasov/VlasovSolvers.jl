@@ -20,17 +20,17 @@ end
 
 function samples(nsamples, kx, α::Float64, μ::Float64, β::Float64)
     #=
-    Sample distribution defined by 1+\alpha \cos(kx * x) in space and a gaussian of variance beta and mean μ in velocity.
+    Sample distribution defined by 1+α\cos(kx * x) in space and a gaussian of variance beta and mean μ in velocity.
     =#
     x0 = Array{Float64}(undef, nsamples)
     seq = SobolSeq(1)
-    for i in 1:nsamples
+    for i = 1:nsamples
         r = Sobol.next!(seq)
         resx = find_zero(x-> x + α/kx * sin(kx*x) - r[1]*2π/kx, 0.0)
         x0[i] = resx
     end
     v0 = rand(Normal(μ, 1/√β), nsamples)
-    wei = 2π/kx/nsamples .* ones(Float64, nsamples)
+    wei = (2π/kx)/nsamples .* ones(Float64, nsamples)
     return x0, v0, wei
 end
 
@@ -85,7 +85,6 @@ end
 compute rho, charge density (ie int f dv)
 """
 function compute_rho(p, m)
-
     nx = m.len
     dx = m.step
     ρ = zeros(nx)
@@ -133,7 +132,7 @@ function compute_int_E(p, mesh)
 end
 
 
-function PIC_step(p, mesh, dt)
+function PIC_step!(p, mesh, dt)
     energy_cine = 1 / 2 * sum(p.wei .* (p.v.^2))
 
     # Use a 3-step splitting, to be of order 2.
@@ -142,4 +141,40 @@ function PIC_step(p, mesh, dt)
     phi_t, der_phi_t = update_velocities!(p, 1, dt/2, 2π/mesh.stop) # 1 because we are in HMF framework
 
     return sum(p.wei .* phi_t), compute_int_E(p, mesh), sum(der_phi_t.^2) * mesh.stop / length(p.x)
+end
+
+function PIC_step!(p, meshx, meshv, dt, dphidx)
+    #=
+    PIC step when supplying the derivative of the electrostatic potential
+    =# 
+    # Use a 3-step splitting, to be of order 2.
+    # We interpolate the derivative of the potential, defined on a grid, to obtain an approximation
+    # of its value at each particle position.
+    for ipart = 1:p.nbpart
+        idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
+        t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
+        p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
+        # Periodic boundary conditions in velocity
+        if p.v[ipart] > meshv.stop
+            p.v[ipart] -= meshv.stop - meshv.start
+        elseif p.v[ipart] < meshv.start
+            p.v[ipart] += meshv.stop - meshv.start
+        end
+    end
+    update_positions!(p, meshx, dt)
+    for ipart = 1:p.nbpart
+        idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
+        t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
+        p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
+        # Periodic boundary conditions in velocity
+        if p.v[ipart] > meshv.stop
+            p.v[ipart] -= meshv.stop - meshv.start
+        elseif p.v[ipart] < meshv.start
+            p.v[ipart] += meshv.stop - meshv.start
+        end
+    end
+
+
+
+    return sum(dphidx.^2) * meshx.stop / p.nbpart
 end
