@@ -84,7 +84,7 @@ end
 update particle velocities vp (phi_v)
 """
 function update_velocities!(p, pmover, dt)
-    compute_S_C!(p, pmover, kx)
+    compute_S_C!(p, pmover)
     pmover.phi .= 0
     pmover.der_phi .= 0
 
@@ -93,7 +93,7 @@ function update_velocities!(p, pmover, dt)
         pmover.tmpcosk .= cos.(kkx .* p.x)
         pmover.tmpsink .= sin.(kkx .* p.x)
         denom_derphi = 1 / (π*k)
-        denom_phi = 1 / (pi*k^2*kx)
+        denom_phi = pmover.meshx.stop / (2*π^2*k^2) 
         pmover.der_phi  .+= denom_derphi .* (-pmover.tmpsink .* pmover.C[k] + pmover.tmpcosk .* pmover.S[k])
         pmover.phi      .+= denom_phi    .* (pmover.tmpcosk .* pmover.C[k] + pmover.tmpsink .* pmover.S[k])
     end
@@ -102,7 +102,8 @@ end
 
 """ S[k] = \\sum_l=1^n {\\beta_l * sin(k kx x_l)} et C[k] = \\sum_l=1^n {\\beta_l * cos(k kx x_l)}
 utile pour le calcul de la vitesse et du potentiel electrique phi"""
-function compute_S_C!(p, pmover, kx)
+function compute_S_C!(p, pmover)
+    kx = 2π / pmover.meshx.stop
     @inbounds @simd for k = 1:pmover.K
         pmover.S[k] = sum(p.wei .* sin.(k .* kx .* p.x))
         pmover.C[k] = sum(p.wei .* cos.(k .* kx .* p.x))
