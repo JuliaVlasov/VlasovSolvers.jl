@@ -11,10 +11,44 @@ using LinearAlgebra
 Describe meta particules, represented by a Dirac disbtibution in (x, v), with a weight (~a high) of wei
 """
 struct Particles
-    x #list of the positions
-    v #list of the velocities
-    wei #list of the weights of the particules
-    nbpart #nulber of particules
+    x ::Vector{Float64}     # list of the positions
+    v ::Vector{Float64}     # list of the velocities
+    wei ::Vector{Float64}   # list of the weights of the particules
+    nbpart ::Int64          # nmber of particules
+end
+
+"""
+Holds pre-allocated arrays
+"""
+struct ParticleMover
+    phi ::Vector{Float64}
+    der_phi :: Vector{Float64}
+    meshx
+    K
+    poisson_matrix
+    C ::Vector{Float64}
+    S ::Vector{Float64}
+    ρ ::Vector{Float64}
+    ρ_tot :: Vector{Float64}
+    phi_grid ::Vector{Float64}
+    tmpcosk ::Vector{Float64}
+    tmpsink ::Vector{Float64}
+    
+    function ParticleMover(particles::Particles, meshx, K)
+        der_phi = similar(particles.x)
+        phi = similar(particles.x)
+        tmpcosk = similar(particles.x)
+        tmpsink = similar(particles.x)
+        nx = meshx.len
+        matrix_poisson = spdiagm(  -1 => -ones(Float64,nx-1),
+                                    0 => 2 .* ones(Float64,nx),
+                                    1 => -ones(Float64,nx-1))
+        matrix_poisson[1, nx] = -1
+        matrix_poisson[nx, 1] = -1
+
+
+        new(phi, der_phi, meshx, K, matrix_poisson, Vector{Float64}(undef, K), Vector{Float64}(undef, K), Vector{Float64}(undef, nx), [0.0], Vector{Float64}(undef, nx), tmpcosk, tmpsink)
+    end
 end
 
 
@@ -35,7 +69,7 @@ function samples(nsamples, kx, α::Float64, μ::Float64, β::Float64)
 end
 
 function update_positions!(p, mesh, dt)
-    for i = eachindex(p.x)
+    @inbounds @simd for i = eachindex(p.x)
         p.x[i] += p.v[i] * dt 
         # Periodic boundary conditions
         if p.x[i] > mesh.stop
@@ -49,98 +83,81 @@ end
 """
 update particle velocities vp (phi_v)
 """
-function update_velocities!(p, n, dt, kx)
-    S, C = compute_S_C(p, n, kx)
-    der_phi = similar(p.x)
-    phi = similar(p.x)
-    for posidx = eachindex(p.x)
-        der_phi[posidx] = 0
-        phi[posidx] = 0
-        for k = eachindex(C)
-            der_phi[posidx] += 1/(pi*k) * (-sin(k*kx*p.x[posidx]) * C[k] + cos(k*kx*p.x[posidx]) * S[k])
-            phi[posidx] += 1/(pi*k^2*kx) * (cos(k*kx*p.x[posidx]) * C[k] + sin(k*kx*p.x[posidx]) * S[k])
-        end
+function update_velocities!(p, pmover, dt)
+    compute_S_C!(p, pmover, kx)
+    pmover.phi .= 0
+    pmover.der_phi .= 0
+
+    @inbounds @simd for k = 1:pmover.K
+        kkx = k* 2π / pmover.meshx.stop
+        pmover.tmpcosk .= cos.(kkx .* p.x)
+        pmover.tmpsink .= sin.(kkx .* p.x)
+        denom_derphi = 1 / (π*k)
+        denom_phi = 1 / (pi*k^2*kx)
+        pmover.der_phi  .+= denom_derphi .* (-pmover.tmpsink .* pmover.C[k] + pmover.tmpcosk .* pmover.S[k])
+        pmover.phi      .+= denom_phi    .* (pmover.tmpcosk .* pmover.C[k] + pmover.tmpsink .* pmover.S[k])
     end
-    p.v .-= dt .* der_phi
-    return phi, der_phi
+    p.v .-= dt .* pmover.der_phi
 end
 
 """ S[k] = \\sum_l=1^n {\\beta_l * sin(k kx x_l)} et C[k] = \\sum_l=1^n {\\beta_l * cos(k kx x_l)}
 utile pour le calcul de la vitesse et du potentiel electrique phi"""
-function compute_S_C(p, n, kx)
-    S = Array{Float64}(undef, n)
-    C = Array{Float64}(undef, n)
-    for k = eachindex(S)
-        S[k] = 0
-        C[k] = 0
-        for l = eachindex(p.x)
-            S[k] += p.wei[l] * sin((k * kx) * p.x[l])
-            C[k] += p.wei[l] * cos((k * kx) * p.x[l])
-        end
+function compute_S_C!(p, pmover, kx)
+    @inbounds @simd for k = 1:pmover.K
+        pmover.S[k] = sum(p.wei .* sin.(k .* kx .* p.x))
+        pmover.C[k] = sum(p.wei .* cos.(k .* kx .* p.x))
     end
-    return S, C
 end
 
 """
 compute rho, charge density (ie int f dv)
+
+Projection on mesh is done here.
 """
-function compute_rho(p, m)
-    nx = m.len
-    dx = m.step
-    ρ = zeros(nx)
+function compute_rho!(p, pmover)
+    nx = pmover.meshx.len
+    dx = pmover.meshx.step
+    pmover.ρ .= 0.0
  
-    for ipart=1:p.nbpart
+    @inbounds @simd for ipart=1:p.nbpart
         idxonmesh = Int64(fld(p.x[ipart], dx)) + 1
         t = (p.x[ipart] - (idxonmesh-1) * dx) / dx
-        ρ[idxonmesh] += p.wei[ipart] * (1-t)
-        ρ[idxonmesh < nx ? idxonmesh+1 : 1] += p.wei[ipart] * t   
+        pmover.ρ[idxonmesh] += p.wei[ipart] * (1-t)
+        pmover.ρ[idxonmesh < nx ? idxonmesh+1 : 1] += p.wei[ipart] * t   
     end
-    ρ ./= dx
+    pmover.ρ ./= dx
  
-    ρ_tot  = sum(ρ) * dx / m.stop
-    return ρ, ρ_tot
+    pmover.ρ_tot[1]  = sum(pmover.ρ) * dx / pmover.meshx.stop
 end
 
-function compute_phi(rho, rho_total, mesh)
-    dx = mesh.step
-    L = mesh.stop
-    nx = mesh.len
-    matrix_poisson = spdiagm(  -1 => -ones(Float64,nx-1),
-                                0 => 2*ones(Float64,nx),
-                                1 => -ones(Float64,nx-1))
-    matrix_poisson[1, nx] = -1
-    matrix_poisson[nx, 1] = -1
-    phi = matrix_poisson \ ((rho .- rho_total) .* dx^2 )
+function compute_phi!(pmover)
+    dx = pmover.meshx.step
+    L = pmover.meshx.stop
+    
+    pmover.phi_grid .= pmover.poisson_matrix \ ((pmover.ρ .- pmover.ρ_tot[1]) .* dx^2 )
         # - rho_total car le monde est circulaire, sol périodique
-    phi_total = sum(phi) * dx / L
-    return phi .- phi_total # - phi_total densité car centré en 0
+    pmover.phi_grid .-= sum(pmover.phi_grid) * dx / L
 end
 
-function compute_E(phi, mesh)
-    return -(circshift(phi, 1) .- circshift(phi, -1)) ./ (2*mesh.step)
+function compute_E(pmover)
+    return -(circshift(pmover.phi, 1) .- circshift(pmover.phi, -1)) ./ (2*pmover.meshx.step)
 end
 
-function compute_int_E(p, mesh)
-    rho, rho_t = compute_rho(p, mesh)
-    phi = compute_phi(rho, rho_t, mesh)
-    E = compute_E(phi, mesh)
-    s = 0.0
-    for ide = eachindex(E)
-        s += E[ide]^2
-    end
-    return s * mesh.step
+function compute_int_E(p, pmover)
+    compute_rho!(p, pmover)
+    compute_phi!(pmover)
+    E = compute_E(pmover)
+    return sum(E.^2) * pmover.meshx.step
 end
 
 
-function PIC_step!(p, mesh, dt)
-    energy_cine = 1 / 2 * sum(p.wei .* (p.v.^2))
+function PIC_step!(p::Particles, pmover::ParticleMover, dt)
+    # Use a 3-step splitting, of order 2:
+    update_velocities!(p, pmover, dt/2)
+    update_positions!(p, pmover.meshx, dt)
+    update_velocities!(p, pmover, dt/2) 
 
-    # Use a 3-step splitting, to be of order 2.
-    update_velocities!(p, 1, dt/2, 2π/mesh.stop) # 1 because we are in HMF framework
-    update_positions!(p, mesh, dt)
-    phi_t, der_phi_t = update_velocities!(p, 1, dt/2, 2π/mesh.stop) # 1 because we are in HMF framework
-
-    return sum(p.wei .* phi_t), compute_int_E(p, mesh), sum(der_phi_t.^2) * mesh.stop / length(p.x)
+    return sum(p.wei .* pmover.phi), sum(pmover.der_phi.^2) * pmover.meshx.stop / length(p.x)
 end
 
 function PIC_step!(p, meshx, meshv, dt, dphidx)
@@ -176,5 +193,5 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
 
 
 
-    return sum(dphidx.^2) * meshx.stop / p.nbpart
+    return sqrt.(sum(dphidx.^2) * meshx.stop / p.nbpart)
 end
