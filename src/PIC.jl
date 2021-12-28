@@ -22,33 +22,35 @@ Holds pre-allocated arrays
 """
 struct ParticleMover
     phi ::Vector{Float64}
-    der_phi :: Vector{Float64}
+    ∂phi :: Vector{Float64}
     meshx
     K
     C ::Vector{Float64}
     S ::Vector{Float64}
     tmpcosk ::Vector{Float64}
     tmpsink ::Vector{Float64}
-    # poisson_matrix
-    # ρ ::Vector{Float64}
-    # ρ_tot :: Vector{Float64}
-    # phi_grid ::Vector{Float64}
+    poisson_matrix
+    ρ ::Vector{Float64}
+    phi_grid ::Vector{Float64}
     
     function ParticleMover(particles::Particles, meshx, K)
-        der_phi = similar(particles.x)
+        ∂phi = similar(particles.x)
         phi = similar(particles.x)
         tmpcosk = similar(particles.x)
         tmpsink = similar(particles.x)
+        nx = meshx.len
 
-        # matrix_poisson = spdiagm(  -1 => -ones(Float64,nx-1),
-        #                             0 => 2 .* ones(Float64,nx),
-        #                             1 => -ones(Float64,nx-1))
-        # matrix_poisson[1, nx] = -1
-        # matrix_poisson[nx, 1] = -1
+        matrix_poisson = spdiagm(  -1 => .- ones(Float64,nx-1),
+                                    0 => 2 .* ones(Float64,nx),
+                                    1 => .- ones(Float64,nx-1))
+        matrix_poisson[1, nx] = -1
+        matrix_poisson[nx, 1] = -1
+
+        matrix_poisson ./= meshx.step^2
 
 
-        new(phi, der_phi, meshx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink) 
-        # , matrix_poisson, Vector{Float64}(undef, nx), [0.0], Vector{Float64}(undef, nx))
+        new(phi, ∂phi, meshx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
+        , matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx))
     end
 end
 
@@ -87,18 +89,17 @@ update particle velocities vp (phi_v)
 function update_velocities!(p, pmover, dt)
     compute_S_C!(p, pmover)
     pmover.phi .= 0
-    pmover.der_phi .= 0
+    pmover.∂phi .= 0
 
     @inbounds @simd for k = 1:pmover.K
-        kkx = k * 2π / pmover.meshx.stop
-        pmover.tmpcosk .= cos.(kkx .* p.x)
-        pmover.tmpsink .= sin.(kkx .* p.x)
-        denom_derphi = 1 / (π*k)
+        pmover.tmpcosk .= cos.(k * 2π / pmover.meshx.stop .* p.x)
+        pmover.tmpsink .= sin.(k * 2π / pmover.meshx.stop .* p.x)
         denom_phi = pmover.meshx.stop / (2*π^2*k^2) 
-        pmover.der_phi  .+= denom_derphi .* (.-pmover.tmpsink .* pmover.C[k] .+ pmover.tmpcosk .* pmover.S[k])
+        denom_derphi = 1 / (π*k)
         pmover.phi      .+= denom_phi    .* (  pmover.tmpcosk .* pmover.C[k] .+ pmover.tmpsink .* pmover.S[k])
+        pmover.∂phi  .+= denom_derphi .* (.-pmover.tmpsink .* pmover.C[k] .+ pmover.tmpcosk .* pmover.S[k])
     end
-    p.v .-= dt .* pmover.der_phi
+    p.v .-= dt .* pmover.∂phi
 end
 
 """ S[k] = \\sum_l=1^n {\\beta_l * sin(k kx x_l)} et C[k] = \\sum_l=1^n {\\beta_l * cos(k kx x_l)}
@@ -114,13 +115,12 @@ end
 
 
 function PIC_step!(p::Particles, pmover::ParticleMover, dt)
-    # Use a 3-step splitting, of order 2:
-    update_velocities!(p, pmover, dt/2)
-    update_positions!(p, pmover.meshx, dt)
-    update_velocities!(p, pmover, dt/2) 
+    update_positions!(p, pmover.meshx, dt/2)
+    update_velocities!(p, pmover, dt)
+    update_positions!(p, pmover.meshx, dt/2)
 
-    # Returns the square of the electric energy, computed in two different ways.
-    return sum(p.wei .* pmover.phi), sum(pmover.der_phi.^2) * pmover.meshx.stop / length(p.x)
+    # Returns the square of the electric energy, computed in three different ways.
+    return sum(p.wei .* pmover.phi), sum(pmover.∂phi.^2) * pmover.meshx.stop / p.nbpart, compute_int_E(p, pmover)
 end
 
 function PIC_step!(p, meshx, meshv, dt, dphidx)
@@ -159,43 +159,42 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
     return sqrt.(sum(dphidx.^2) * meshx.stop / p.nbpart)
 end
 
-# """
-# compute rho, charge density (ie int f dv)
+"""
+compute rho, charge density (ie int f dv)
 
-# Projection on mesh is done here.
-# """
-# function compute_rho!(p, pmover)
-#     nx = pmover.meshx.len
-#     dx = pmover.meshx.step
-#     pmover.ρ .= 0.0
+Projection on mesh is done here.
+"""
+function compute_rho!(p, pmover)
+    nx = pmover.meshx.len
+    dx = pmover.meshx.step
+    pmover.ρ .= 0.0
  
-#     @inbounds @simd for ipart=1:p.nbpart
-#         idxonmesh = Int64(fld(p.x[ipart], dx)) + 1
-#         t = (p.x[ipart] - (idxonmesh-1) * dx) / dx
-#         pmover.ρ[idxonmesh] += p.wei[ipart] * (1-t)
-#         pmover.ρ[idxonmesh < nx ? idxonmesh+1 : 1] += p.wei[ipart] * t   
-#     end
-#     pmover.ρ ./= dx
+    @inbounds @simd for ipart=1:p.nbpart
+        idxonmesh = Int64(fld(p.x[ipart], dx)) + 1
+        t = (p.x[ipart] - (idxonmesh-1) * dx) / dx
+        pmover.ρ[idxonmesh] += p.wei[ipart] * (1-t)
+        pmover.ρ[idxonmesh < nx ? idxonmesh+1 : 1] += p.wei[ipart] * t   
+    end
+    pmover.ρ ./= dx
  
-#     pmover.ρ_tot[1]  = sum(pmover.ρ) * dx / pmover.meshx.stop
-# end
+    pmover.ρ .-= sum(pmover.ρ) * dx / pmover.meshx.stop
+end
 
-# function compute_phi!(pmover)
-#     dx = pmover.meshx.step
-#     L = pmover.meshx.stop
+function compute_phi!(pmover)
+    dx = pmover.meshx.step
+    L = pmover.meshx.stop
     
-#     pmover.phi_grid .= pmover.poisson_matrix \ ((pmover.ρ .- pmover.ρ_tot[1]) .* dx^2 )
-#         # - rho_total car le monde est circulaire, sol périodique
-#     pmover.phi_grid .-= sum(pmover.phi_grid) * dx / L
-# end
+    pmover.phi_grid .= pmover.poisson_matrix \ pmover.ρ
+    pmover.phi_grid .-= sum(pmover.phi_grid) * dx / L
+end
 
-# function compute_E(pmover)
-#     return -(circshift(pmover.phi, 1) .- circshift(pmover.phi, -1)) ./ (2*pmover.meshx.step)
-# end
+function compute_E(pmover)
+    return -(circshift(pmover.phi_grid, 1) .- circshift(pmover.phi_grid, -1)) ./ (2*pmover.meshx.step)
+end
 
-# function compute_int_E(p, pmover)
-#     compute_rho!(p, pmover)
-#     compute_phi!(pmover)
-#     E = compute_E(pmover)
-#     return sum(E.^2) * pmover.meshx.step
-# end
+function compute_int_E(p, pmover)
+    compute_rho!(p, pmover)
+    compute_phi!(pmover)
+    E = compute_E(pmover)
+    return sum(E.^2) * pmover.meshx.step
+end
