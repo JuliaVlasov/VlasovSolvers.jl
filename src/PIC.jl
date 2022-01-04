@@ -24,6 +24,7 @@ struct ParticleMover
     phi ::Vector{Float64}
     ∂phi :: Vector{Float64}
     meshx
+    kx
     K
     C ::Vector{Float64}
     S ::Vector{Float64}
@@ -33,7 +34,7 @@ struct ParticleMover
     ρ ::Vector{Float64}
     phi_grid ::Vector{Float64}
     
-    function ParticleMover(particles::Particles, meshx, K)
+    function ParticleMover(particles::Particles, meshx, kx, K)
         ∂phi = similar(particles.x)
         phi = similar(particles.x)
         tmpcosk = similar(particles.x)
@@ -49,7 +50,7 @@ struct ParticleMover
         matrix_poisson ./= meshx.step^2
 
 
-        new(phi, ∂phi, meshx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
+        new(phi, ∂phi, meshx, kx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
         , matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx))
     end
 end
@@ -75,7 +76,7 @@ function update_positions!(p, mesh, dt)
     @inbounds @simd for i = eachindex(p.x)
         p.x[i] += p.v[i] * dt 
         # Periodic boundary conditions
-        if p.x[i] > mesh.stop
+        if p.x[i] >= mesh.stop
             p.x[i] -= mesh.stop
         elseif p.x[i] < mesh.start
             p.x[i] += mesh.stop
@@ -92,8 +93,8 @@ function update_velocities!(p, pmover, dt)
     pmover.∂phi .= 0
 
     @inbounds @simd for k = 1:pmover.K
-        pmover.tmpcosk .= cos.(k * 2π / pmover.meshx.stop .* p.x)
-        pmover.tmpsink .= sin.(k * 2π / pmover.meshx.stop .* p.x)
+        pmover.tmpcosk .= cos.(k * pmover.kx .* p.x)
+        pmover.tmpsink .= sin.(k * pmover.kx .* p.x)
         denom_phi = pmover.meshx.stop / (2*π^2*k^2) 
         denom_derphi = 1 / (π*k)
         pmover.phi      .+= denom_phi    .* (  pmover.tmpcosk .* pmover.C[k] .+ pmover.tmpsink .* pmover.S[k])
@@ -172,6 +173,11 @@ function compute_rho!(p, pmover)
     @inbounds @simd for ipart=1:p.nbpart
         idxonmesh = Int64(fld(p.x[ipart], dx)) + 1
         t = (p.x[ipart] - (idxonmesh-1) * dx) / dx
+        if idxonmesh > pmover.meshx.len
+            idxonmesh -= pmover.meshx.len
+        elseif idxonmesh < 1
+            idxonmesh += pmover.meshx.len
+        end
         pmover.ρ[idxonmesh] += p.wei[ipart] * (1-t)
         pmover.ρ[idxonmesh < nx ? idxonmesh+1 : 1] += p.wei[ipart] * t   
     end
