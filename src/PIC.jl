@@ -63,8 +63,8 @@ struct ParticleMover
     poisson_matrix
     ρ ::Vector{Float64}
     phi_grid ::Vector{Float64}
-    idxonmesh :: Vector{Float64}
-    idxonmeshp1 :: Vector{Float64}
+    idxonmesh :: Vector{Int64}
+    idxonmeshp1 :: Vector{Int64}
     rkn :: rkn_order4
     dt :: Float64
     
@@ -74,6 +74,7 @@ struct ParticleMover
         tmpcosk = similar(particles.x)
         tmpsink = similar(particles.x)
         nx = meshx.len
+        np = particles.nbpart
 
         matrix_poisson = spdiagm(  -1 => .- ones(Float64,nx-1),
                                     0 => 2 .* ones(Float64,nx),
@@ -85,63 +86,10 @@ struct ParticleMover
 
 
         new(phi, ∂phi, meshx, kx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
-        , matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), rkn_order4(particles.x, dt), dt)
+        , matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), Vector{Int64}(undef, np), Vector{Int64}(undef, np), rkn_order4(particles.x, dt), dt)
     end
 end
 
-
-function samples(nsamples, kx, α::Float64, μ::Float64, β::Float64)
-    #=
-    Sample distribution defined by 1+α\cos(kx * x) in space and a gaussian of variance beta and mean μ in velocity.
-    =#
-    x0 = Array{Float64}(undef, nsamples)
-    seq = SobolSeq(1)
-    for i = 1:nsamples
-        r = Sobol.next!(seq)
-        resx = find_zero(x-> x + α/kx * sin(kx*x) - r[1]*2π/kx, 0.0)
-        x0[i] = resx
-    end
-    v0 = rand(Normal(μ, 1/√β), nsamples)
-    wei = (2π/kx)/nsamples .* ones(Float64, nsamples)
-    return x0, v0, wei
-end
-
-function update_positions!(p, mesh, dt)
-    p.x .+= p.v .* dt
-    p.x[findall(x -> x >= mesh.stop,  p.x)] .-= mesh.stop - mesh.start
-    p.x[findall(x -> x <  mesh.start, p.x)] .+= mesh.stop - mesh.start
-end
-
-"""
-update particle velocities vp (phi_v)
-"""
-function update_velocities!(p, pmover, dt)
-    compute_S_C!(p, pmover)
-    pmover.phi .= 0
-    pmover.∂phi .= 0
-
-    for k = 1:pmover.K
-        pmover.tmpcosk .= cos.(k .* pmover.kx .* p.x)
-        pmover.tmpsink .= sin.(k .* pmover.kx .* p.x)
-        denom_phi = pmover.meshx.stop / (2*π^2*k^2) 
-        denom_derphi = 1 / (π*k)
-        pmover.phi   .+= denom_phi    .* (  pmover.tmpcosk .* pmover.C[k] .+ pmover.tmpsink .* pmover.S[k])
-        pmover.∂phi  .+= denom_derphi .* (.-pmover.tmpsink .* pmover.C[k] .+ pmover.tmpcosk .* pmover.S[k])
-    end
-    p.v .-= dt .* pmover.∂phi
-end
-
-""" S[k] = \\sum_l=1^n {\\beta_l * sin(k kx x_l)} et C[k] = \\sum_l=1^n {\\beta_l * cos(k kx x_l)}
-utile pour le calcul de la vitesse et du potentiel electrique phi"""
-function compute_S_C!(p, pmover)
-    pmover.S .= 0
-    pmover.C .= 0
-    
-    for k = 1:pmover.K
-        pmover.S[k] = sum(p.wei .* sin.(k .* 2π ./ pmover.meshx.stop .* p.x))
-        pmover.C[k] = sum(p.wei .* cos.(k .* 2π ./ pmover.meshx.stop .* p.x))
-    end
-end
 
 
 #==== Time steppers ====#
@@ -200,31 +148,37 @@ end
 function symplectic_RKN_order4!(p, pmover)
     @views begin
         for s=1:3
-            pmover.rkn.G .= p.x .+ p.v .* pmover.rkn.c[s] .+ pmover.rkn.a[s, 1] .* pmover.rkn.fg[:, 1] .+ pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
-            
-            pmover.rkn.G .*= pmover.kx
+            pmover.rkn.G .= p.x .+ p.v .* pmover.rkn.c[s] .+ pmover.rkn.a[s, 1] .* pmover.rkn.fg[:, 1] .+ 
+                                                             pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ 
+                                                             pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
      
             pmover.rkn.fg[:, s] .= 0
             for k=1:pmover.K
-                pmover.tmpcosk .= cos.(pmover.rkn.G .* k)
-                pmover.tmpsink .= sin.(pmover.rkn.G .* k)
+                pmover.tmpcosk .= cos.(pmover.rkn.G .* (k * pmover.kx))
+                pmover.tmpsink .= sin.(pmover.rkn.G .* (k * pmover.kx))
                 pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
                 pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-                pmover.rkn.fg[:, s] .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / (π * k)
+                pmover.rkn.fg[:, s] .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
             end
+            pmover.rkn.fg[:, s] ./= π
         end
     
-        p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ pmover.rkn.b̄[2] .* pmover.rkn.fg[:, 2] .+ pmover.rkn.b̄[3]  .* pmover.rkn.fg[:, 3]
-        p.v .+= pmover.rkn.b[1] .* pmover.rkn.fg[:, 1] .+ pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
+        p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ 
+                                    pmover.rkn.b̄[2] .* pmover.rkn.fg[:, 2] .+ 
+                                    pmover.rkn.b̄[3] .* pmover.rkn.fg[:, 3]
+        p.v .+= pmover.rkn.b[1] .* pmover.rkn.fg[:, 1] .+ 
+                pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ 
+                pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
         
         pmover.phi .= 0
         for k=1:pmover.K
-            pmover.tmpcosk .= cos.(p.x .* pmover.kx .* k)
-            pmover.tmpsink .= sin.(p.x .* pmover.kx .* k)
+            pmover.tmpcosk .= cos.(p.x .* (k * pmover.kx))
+            pmover.tmpsink .= sin.(p.x .* (k * pmover.kx))
             pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
             pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-            pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) .* pmover.meshx.stop / (2*π^2 * k^2)
+            pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
         end
+        pmover.phi .*= pmover.meshx.stop / (2*π^2)
     end
 end
 
@@ -249,16 +203,19 @@ function strang_splitting!(particles, pmover)
     pmover.∂phi .= 0
     particles.x .+= particles.v .* pmover.dt/2
     for k = 1:pmover.K
-        pmover.tmpcosk .= cos.(particles.x .* pmover.kx .* k)
-        pmover.tmpsink .= sin.(particles.x .* pmover.kx .* k)
+        pmover.tmpcosk .= cos.(particles.x .* (pmover.kx * k))
+        pmover.tmpsink .= sin.(particles.x .* (pmover.kx * k))
         pmover.C[k] = sum(pmover.tmpcosk .* particles.wei)
         pmover.S[k] = sum(pmover.tmpsink .* particles.wei)
-        pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) .* pmover.meshx.stop ./ (2*π^2*k^2)
-        pmover.∂phi .+= (.-pmover.C[k] .* pmover.tmpsink .+ pmover.S[k] .* pmover.tmpcosk) / (π * k)
+        pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
+        pmover.∂phi .+= (.-pmover.C[k] .* pmover.tmpsink .+ pmover.S[k] .* pmover.tmpcosk) ./ k
     end
+    pmover.phi .*= pmover.meshx.stop ./ (2*π^2)
+    pmover.∂phi ./= π
     particles.v .-= pmover.dt .* pmover.∂phi
     particles.x .+= particles.v .* pmover.dt/2
 end
+
 
 
 # ===== Some quantities we can compute at each step ==== #
@@ -299,29 +256,46 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
     # Use a 3-step splitting, to be of order 2.
     # We interpolate the derivative of the potential, defined on a grid, to obtain an approximation
     # of its value at each particle position.
-    for ipart = 1:p.nbpart
-        idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
-        t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
-        p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
-        # Periodic boundary conditions in velocity
-        if p.v[ipart] > meshv.stop
-            p.v[ipart] -= meshv.stop - meshv.start
-        elseif p.v[ipart] < meshv.start
-            p.v[ipart] += meshv.stop - meshv.start
-        end
-    end
+
+    idxonmesh = Int64.(fld.(p.x, meshx.step)) .+ 1
+    t = (p.x .- (idxonmesh.-1) .* meshx.step) ./ meshx.step
+    idxonmesh[findall(i -> i > meshx.len,  idxonmesh)] .-= meshx.len
+    idxonmesh[findall(i -> i < 1               ,  idxonmesh)] .+= meshx.len
+    idxonmeshp1 = idxonmesh .+ 1
+    idxonmeshp1[findall(i -> i > meshx.len,  idxonmeshp1)] .-= meshx.len
+    p.v .-= dt ./ 2 .* (dphidx[idxonmesh] .* (1 .- t) .+ dphidx[idxonmeshp1] .* t)
+
+    # for ipart = 1:p.nbpart
+    #     idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
+    #     t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
+    #     p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
+    #     # # Periodic boundary conditions in velocity
+    #     # if p.v[ipart] > meshv.stop
+    #     #     p.v[ipart] -= meshv.stop - meshv.start
+    #     # elseif p.v[ipart] < meshv.start
+    #     #     p.v[ipart] += meshv.stop - meshv.start
+    #     # end
+    # end
     update_positions!(p, meshx, dt)
-    for ipart = 1:p.nbpart
-        idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
-        t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
-        p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
-        # Periodic boundary conditions in velocity
-        if p.v[ipart] > meshv.stop
-            p.v[ipart] -= meshv.stop - meshv.start
-        elseif p.v[ipart] < meshv.start
-            p.v[ipart] += meshv.stop - meshv.start
-        end
-    end
+    # for ipart = 1:p.nbpart
+    #     idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
+    #     t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
+    #     p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
+    #     # Periodic boundary conditions in velocity
+    #     # if p.v[ipart] > meshv.stop
+    #     #     p.v[ipart] -= meshv.stop - meshv.start
+    #     # elseif p.v[ipart] < meshv.start
+    #     #     p.v[ipart] += meshv.stop - meshv.start
+    #     # end
+    # end
+
+    idxonmesh .= Int64.(fld.(p.x, meshx.step)) .+ 1
+    t = (p.x .- (idxonmesh.-1) .* meshx.step) ./ meshx.step
+    idxonmesh[findall(i -> i > meshx.len,  idxonmesh)] .-= meshx.len
+    idxonmesh[findall(i -> i < 1               ,  idxonmesh)] .+= meshx.len
+    idxonmeshp1 .= idxonmesh .+ 1
+    idxonmeshp1[findall(i -> i > meshx.len,  idxonmeshp1)] .-= meshx.len
+    p.v .-= dt ./ 2 .* (dphidx[idxonmesh] .* (1 .- t) .+ dphidx[idxonmeshp1] .* t)
 
 
 
@@ -334,9 +308,62 @@ end
 
 
 
+#= ================= #
+    CLASSICAL PIC 
+#  ================ =#
 
+function samples(nsamples, kx, α::Float64, μ::Float64, β::Float64)
+    #=
+    Sample distribution defined by 1+α\cos(kx * x) in space and a gaussian of variance beta and mean μ in velocity.
+    =#
+    x0 = Array{Float64}(undef, nsamples)
+    seq = SobolSeq(1)
+    for i = 1:nsamples
+        r = Sobol.next!(seq)
+        resx = find_zero(x-> x + α/kx * sin(kx*x) - r[1]*2π/kx, 0.0)
+        x0[i] = resx
+    end
+    v0 = rand(Normal(μ, 1/√β), nsamples)
+    wei = (2π/kx)/nsamples .* ones(Float64, nsamples)
+    return x0, v0, wei
+end
 
+function update_positions!(p, mesh, dt)
+    p.x .+= p.v .* dt
+    p.x[findall(x -> x >= mesh.stop,  p.x)] .-= mesh.stop - mesh.start
+    p.x[findall(x -> x <  mesh.start, p.x)] .+= mesh.stop - mesh.start
+end
 
+"""
+update particle velocities vp (phi_v)
+"""
+function update_velocities!(p, pmover, dt)
+    compute_S_C!(p, pmover)
+    pmover.phi .= 0
+    pmover.∂phi .= 0
+
+    for k = 1:pmover.K
+        pmover.tmpcosk .= cos.(k .* pmover.kx .* p.x)
+        pmover.tmpsink .= sin.(k .* pmover.kx .* p.x)
+        pmover.phi   .+= (pmover.tmpcosk .* pmover.C[k] .+ pmover.tmpsink .* pmover.S[k]) ./ k^2
+        pmover.∂phi  .+= (.-pmover.tmpsink .* pmover.C[k] .+ pmover.tmpcosk .* pmover.S[k]) ./ k
+    end
+    pmover.phi .*= pmover.meshx.stop / 2*π^2
+    pmover.∂phi ./= π
+    p.v .-= dt .* pmover.∂phi
+end
+
+""" S[k] = \\sum_l=1^n {\\beta_l * sin(k kx x_l)} et C[k] = \\sum_l=1^n {\\beta_l * cos(k kx x_l)}
+utile pour le calcul de la vitesse et du potentiel electrique phi"""
+function compute_S_C!(p, pmover)
+    pmover.S .= 0
+    pmover.C .= 0
+    
+    for k = 1:pmover.K
+        pmover.S[k] = sum(p.wei .* sin.(k .* 2π ./ pmover.meshx.stop .* p.x))
+        pmover.C[k] = sum(p.wei .* cos.(k .* 2π ./ pmover.meshx.stop .* p.x))
+    end
+end
 
 
 
@@ -354,20 +381,24 @@ function compute_rho!(p, pmover)
     dx = pmover.meshx.step
     pmover.ρ .= 0.0
  
-    idxonmesh = Int64.(fld.(p.x, dx)) .+ 1
-    t = (p.x .- (idxonmesh.-1).*dx) ./ dx
+    pmover.idxonmesh .= Int64.(fld.(p.x, dx)) .+ 1
+    t = (p.x .- (pmover.idxonmesh.-1) .* dx) ./ dx
     
     pmover.idxonmesh[findall(i -> i > pmover.meshx.len,  pmover.idxonmesh)] .-= pmover.meshx.len
     pmover.idxonmesh[findall(i -> i < 1               ,  pmover.idxonmesh)] .+= pmover.meshx.len
     
-    pmover.idxonmeshp1 = idxonmesh .+ 1
+    pmover.idxonmeshp1 .= pmover.idxonmesh .+ 1
     pmover.idxonmeshp1[findall(i -> i > pmover.meshx.len,  pmover.idxonmeshp1)] .-= pmover.meshx.len
     
     pmover.ρ[pmover.idxonmesh]   .+= p.wei .* (1 .- t)
     pmover.ρ[pmover.idxonmeshp1] .+= p.wei .* t
 
+    println((sum(pmover.ρ.^2), sum((p.wei .* t).^2), sum((p.wei .* (1 .-t)).^2)))
+
     pmover.ρ .-= sum(pmover.ρ) / pmover.meshx.stop
+    return pmover.ρ
 end
+
 
 function compute_phi!(pmover) # solving poisson equation with FD solver
     dx = pmover.meshx.step
@@ -386,4 +417,42 @@ end
 
 function compute_E(pmover)
     return -(circshift(pmover.phi_grid, 1) .- circshift(pmover.phi_grid, -1)) ./ (2*pmover.meshx.step)
+end
+
+
+# Carybe function
+"""
+compute rho, charge density (ie int f dv)
+"""
+function compute_rho( p, m )
+
+   L = m.stop
+   nx = m.len
+   dx = m.step
+   rho = zeros(nx)
+
+   for ipart=1:p.nbpart
+        xp = p.x[ipart]
+        i = Int(floor(Real(xp) / dx) + 1) #number of the cell with the particule
+        dum = p.wei[ipart] / dx
+        mx_i = (i-1) * dx
+        mx_j = i * dx
+        a1 = (mx_j-xp) * dum
+        a2 = (xp-mx_i) * dum
+        if i < 1
+            i += nx 
+        elseif i > nx
+            i -= nx
+        end
+        rho[i]   += a1
+        rho[i < nx ? i+1 : i+1 - nx] += a2
+   end
+
+#    rho[nx] += rho[1]
+#    rho[1] = rho[nx]
+
+   rho ./= dx
+
+   rho_total  = sum(rho) * dx / L
+   return rho, rho_total
 end
