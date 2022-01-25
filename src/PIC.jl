@@ -121,7 +121,7 @@ function symplectic_RKN_order4!(p, pmover, kernel)
                                                              pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ 
                                                              pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
      
-            kernel(pmover.rkn.fg[:, s], p, pmover)
+            kernel(pmover.rkn.fg[:, s], pmover.rkn.G, p, pmover)
         end
     
         p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ 
@@ -131,7 +131,7 @@ function symplectic_RKN_order4!(p, pmover, kernel)
                 pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ 
                 pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
         
-        update_phi!(p, pmover)
+        kernel(pmover.∂phi, p.x, p, pmover)
     end
 end
 
@@ -151,49 +151,37 @@ end
 
     Updates X, V in place, and returns coefficients C, S at current time. 
 """
-function strang_splitting!(particles, pmover)  
+function strang_splitting!(particles, pmover, kernel)  
     pmover.phi .= 0
     pmover.∂phi .= 0
     particles.x .+= particles.v .* pmover.dt/2
-    for k = 1:pmover.K
-        pmover.tmpcosk .= cos.(particles.x .* (pmover.kx * k))
-        pmover.tmpsink .= sin.(particles.x .* (pmover.kx * k))
-        pmover.C[k] = sum(pmover.tmpcosk .* particles.wei)
-        pmover.S[k] = sum(pmover.tmpsink .* particles.wei)
-        pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
-        pmover.∂phi .+= (.-pmover.C[k] .* pmover.tmpsink .+ pmover.S[k] .* pmover.tmpcosk) ./ k
-    end
-    pmover.phi .*= pmover.meshx.stop ./ (2*π^2)
-    pmover.∂phi ./= π
+    kernel(pmover.∂phi, particles.x, particles, pmover)
     particles.v .-= pmover.dt .* pmover.∂phi
     particles.x .+= particles.v .* pmover.dt/2
 end
 
 
-function update_phi!(p, pmover)
+# ===== Kernel computations ==== #
+"""
+Store ∂_x phi[f] computed at x
+"""
+function kernel_poisson!(dst, x, p, pmover)
+    dst .= 0
     pmover.phi .= 0
     for k=1:pmover.K
-        pmover.tmpcosk .= cos.(p.x .* (k * pmover.kx))
-        pmover.tmpsink .= sin.(p.x .* (k * pmover.kx))
+        pmover.tmpcosk .= cos.(x .* (k * pmover.kx))
+        pmover.tmpsink .= sin.(x .* (k * pmover.kx))
         pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
         pmover.S[k] = sum(pmover.tmpsink .* p.wei)
         pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
-    end
-    pmover.phi .*= pmover.meshx.stop / (2*π^2)
-end
-
-
-# ===== Kernel computations ==== #
-function kernel_poisson!(dst, p, pmover)
-    dst .= 0
-    for k=1:pmover.K
-        pmover.tmpcosk .= cos.(pmover.rkn.G .* (k * pmover.kx))
-        pmover.tmpsink .= sin.(pmover.rkn.G .* (k * pmover.kx))
-        pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
-        pmover.S[k] = sum(pmover.tmpsink .* p.wei)
         dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
     end
     dst ./= π
+    pmover.phi .*= pmover.meshx.stop / (2*π^2)
+end
+
+function kernel_gyrokinetic!(dst, x, p, pmover)
+    dst .= .-x
 end
 
 
@@ -217,9 +205,9 @@ function compute_totalenergy²(particles, Eelec²)
 end
 
 
-function PIC_step!(p::Particles, pmover::ParticleMover)
-    symplectic_RKN_order4!(p, pmover, kernel_poisson!)
-    # strang_splitting!(p, pmover)
+function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
+    symplectic_RKN_order4!(p, pmover, kernel)
+    # strang_splitting!(p, pmover, kernel)
 
     E² = compute_electricalenergy²(p, pmover)
 
