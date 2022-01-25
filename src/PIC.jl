@@ -114,53 +114,14 @@ end
     Updates X, V in place, and returns coefficients C, S at current time.
 
 """
-# function symplectic_RKN_order4!(p, pmover)
-#     @views begin
-#         for s=1:3
-#             pmover.rkn.G .= p.x .+ p.v .* pmover.rkn.c[s] .+ pmover.rkn.a[s, 1] .* pmover.rkn.fg[:, 1] .+ pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
-            
-#             pmover.rkn.G .*= pmover.kx
-            
-#             for k = 1:pmover.K
-#                 pmover.tmpcosk .= cos.(pmover.rkn.G .* k)
-#                 pmover.tmpsink .= sin.(pmover.rkn.G .* k)
-#                 pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
-#                 pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-#                 pmover.rkn.fg[:, s] .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) ./ (π * k)
-#             end
-#         end
-    
-#         p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ pmover.rkn.b̄[2] .* pmover.rkn.fg[:, 2] .+ pmover.rkn.b̄[3] .* pmover.rkn.fg[:, 3]
-#         p.v .+= pmover.rkn.b[1] .* pmover.rkn.fg[:, 1] .+ pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
-        
-#         pmover.phi .= 0
-#         for k=1:pmover.K
-#             pmover.tmpcosk .= cos.(p.x .* pmover.kx .* k)
-#             pmover.tmpsink .= sin.(p.v .* pmover.kx .* k)
-#             pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
-#             pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-#             pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk + pmover.S[k] .* pmover.tmpsink) .* pmover.meshx.stop ./ (2 * π^2*k^2)
-#         end
-#     end
-# end
-
-
-function symplectic_RKN_order4!(p, pmover)
+function symplectic_RKN_order4!(p, pmover, kernel)
     @views begin
         for s=1:3
             pmover.rkn.G .= p.x .+ p.v .* pmover.rkn.c[s] .+ pmover.rkn.a[s, 1] .* pmover.rkn.fg[:, 1] .+ 
                                                              pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ 
                                                              pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
      
-            pmover.rkn.fg[:, s] .= 0
-            for k=1:pmover.K
-                pmover.tmpcosk .= cos.(pmover.rkn.G .* (k * pmover.kx))
-                pmover.tmpsink .= sin.(pmover.rkn.G .* (k * pmover.kx))
-                pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
-                pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-                pmover.rkn.fg[:, s] .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
-            end
-            pmover.rkn.fg[:, s] ./= π
+            kernel(pmover.rkn.fg[:, s], p, pmover)
         end
     
         p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ 
@@ -170,15 +131,7 @@ function symplectic_RKN_order4!(p, pmover)
                 pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ 
                 pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
         
-        pmover.phi .= 0
-        for k=1:pmover.K
-            pmover.tmpcosk .= cos.(p.x .* (k * pmover.kx))
-            pmover.tmpsink .= sin.(p.x .* (k * pmover.kx))
-            pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
-            pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-            pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
-        end
-        pmover.phi .*= pmover.meshx.stop / (2*π^2)
+        update_phi!(p, pmover)
     end
 end
 
@@ -217,6 +170,33 @@ function strang_splitting!(particles, pmover)
 end
 
 
+function update_phi!(p, pmover)
+    pmover.phi .= 0
+    for k=1:pmover.K
+        pmover.tmpcosk .= cos.(p.x .* (k * pmover.kx))
+        pmover.tmpsink .= sin.(p.x .* (k * pmover.kx))
+        pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
+        pmover.S[k] = sum(pmover.tmpsink .* p.wei)
+        pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
+    end
+    pmover.phi .*= pmover.meshx.stop / (2*π^2)
+end
+
+
+# ===== Kernel computations ==== #
+function kernel_poisson!(dst, p, pmover)
+    dst .= 0
+    for k=1:pmover.K
+        pmover.tmpcosk .= cos.(pmover.rkn.G .* (k * pmover.kx))
+        pmover.tmpsink .= sin.(pmover.rkn.G .* (k * pmover.kx))
+        pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
+        pmover.S[k] = sum(pmover.tmpsink .* p.wei)
+        dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
+    end
+    dst ./= π
+end
+
+
 
 # ===== Some quantities we can compute at each step ==== #
 """compute_electricalenergy²(p, pmover)
@@ -238,13 +218,11 @@ end
 
 
 function PIC_step!(p::Particles, pmover::ParticleMover)
-    symplectic_RKN_order4!(p, pmover)
+    symplectic_RKN_order4!(p, pmover, kernel_poisson!)
     # strang_splitting!(p, pmover)
 
     E² = compute_electricalenergy²(p, pmover)
 
-    # Returns the square of the electric energy, computed in three different ways.
-    # return sum(p.wei .* pmover.phi), sum(pmover.∂phi.^2) * pmover.meshx.stop / p.nbpart, compute_int_E(p, pmover)
     return E², compute_momentum(p), compute_totalenergy²(p, E²)
 end
 
@@ -301,6 +279,21 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
 
     return sqrt.(sum(dphidx.^2) * meshx.stop / p.nbpart)
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
