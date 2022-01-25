@@ -10,7 +10,7 @@ ENV["GKSwstype"] = "100"
 
 makedocs(modules=[VlasovSolvers],
          sitename = "VlasovSolvers.jl",
-         authors="Pierre Navaro",
+         authors="Julia Vlasov",
          format=Documenter.HTML(;
          prettyurls=get(ENV, "CI", "false") == "true",
          canonical="https://juliavlasov.github.io/VlasovSolvers.jl",
