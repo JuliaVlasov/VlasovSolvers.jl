@@ -1,6 +1,6 @@
 using Sobol
 using Roots
-# using ProgressMeter
+
 using Random
 using Distributions
 using SparseArrays
@@ -68,7 +68,7 @@ struct ParticleMover
     rkn :: rkn_order4
     dt :: Float64
     
-    function ParticleMover(particles::Particles, meshx, kx, K, dt)
+    function ParticleMover(particles::Particles, meshx, K, dt; kx=1)
         phi = similar(particles.x)
         ∂phi = similar(particles.x)
         tmpcosk = similar(particles.x)
@@ -136,18 +136,16 @@ function symplectic_RKN_order4!(p, pmover, kernel)
 end
 
 
-"""strang_splitting!(X, V, F, kx, dt)  
+"""strang_splitting!(particles, pmover, kernel)  
     
     Other method for advecting (X, V) on a time step. 
 
     Uses Verlet scheme (of order 2).
 
     Args:
-    - X: matrix of positions at time t_n
-    - V: matrix of velocities at time t_n
-    - F: values of initial condition at time t_0
-    - kx: 2π/L in most cases
-    - dt: time step
+    - particles: Particle struct
+    - pmover: ParticleMover struct
+    - kernel: how to compute the flow field.
 
     Updates X, V in place, and returns coefficients C, S at current time. 
 """
@@ -156,8 +154,9 @@ function strang_splitting!(particles, pmover, kernel)
     pmover.∂phi .= 0
     particles.x .+= particles.v .* pmover.dt/2
     kernel(pmover.∂phi, particles.x, particles, pmover)
-    particles.v .-= pmover.dt .* pmover.∂phi
+    particles.v .+= pmover.dt .* pmover.∂phi
     particles.x .+= particles.v .* pmover.dt/2
+    kernel(pmover.∂phi, particles.x, particles, pmover)
 end
 
 
@@ -174,6 +173,7 @@ function kernel_poisson!(dst, x, p, pmover)
         pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
         pmover.S[k] = sum(pmover.tmpsink .* p.wei)
         pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
+        # line below computes -∂Φ[f](`x`) and stores it to `dst`
         dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
     end
     dst ./= π
@@ -208,9 +208,7 @@ end
 function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
     symplectic_RKN_order4!(p, pmover, kernel)
     # strang_splitting!(p, pmover, kernel)
-
     E² = compute_electricalenergy²(p, pmover)
-
     return E², compute_momentum(p), compute_totalenergy²(p, E²)
 end
 
