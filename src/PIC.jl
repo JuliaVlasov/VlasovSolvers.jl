@@ -167,7 +167,7 @@ Store ∂_x phi[f] computed at x
 function kernel_poisson!(dst, x, p, pmover)
     dst .= 0
     pmover.phi .= 0
-    for k=1:pmover.K
+    for k=1:pmover.K        
         pmover.tmpcosk .= cos.(x .* (k * pmover.kx))
         pmover.tmpsink .= sin.(x .* (k * pmover.kx))
         pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
@@ -205,9 +205,24 @@ function compute_totalenergy²(particles, Eelec²)
 end
 
 
+
+""" periodic_boundary_conditions!(p, pmover)
+
+    Impose periodic boundary conditions in space.
+"""
+function periodic_boundary_conditions!(p, pmover)
+    p.x[findall(>(pmover.meshx.stop), p.x)] .-= pmover.meshx.stop
+    p.x[findall(<(0)                , p.x)] .+= pmover.meshx.stop
+end
+
+
+
 function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
     symplectic_RKN_order4!(p, pmover, kernel)
     # strang_splitting!(p, pmover, kernel)
+
+    periodic_boundary_conditions!(p, pmover)
+
     E² = compute_electricalenergy²(p, pmover)
     return E², compute_momentum(p), compute_totalenergy²(p, E²)
 end
