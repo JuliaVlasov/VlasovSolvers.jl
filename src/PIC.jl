@@ -51,8 +51,8 @@ end
 Holds pre-allocated arrays
 """
 struct ParticleMover
-    phi ::Vector{Float64}
-    ∂phi :: Vector{Float64}
+    Φ ::Vector{Float64}
+    ∂Φ :: Vector{Float64}
     meshx
     kx
     K
@@ -62,15 +62,15 @@ struct ParticleMover
     tmpsink ::Vector{Float64}
     poisson_matrix
     ρ ::Vector{Float64}
-    phi_grid ::Vector{Float64}
+    Φ_grid ::Vector{Float64}
     idxonmesh :: Vector{Int64}
     idxonmeshp1 :: Vector{Int64}
     rkn :: rkn_order4
     dt :: Float64
     
     function ParticleMover(particles::Particles, meshx, K, dt; kx=1)
-        phi = similar(particles.x)
-        ∂phi = similar(particles.x)
+        Φ = similar(particles.x)
+        ∂Φ = similar(particles.x)
         tmpcosk = similar(particles.x)
         tmpsink = similar(particles.x)
         nx = meshx.len
@@ -85,7 +85,7 @@ struct ParticleMover
         matrix_poisson ./= meshx.step^2
 
 
-        new(phi, ∂phi, meshx, kx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
+        new(Φ, ∂Φ, meshx, kx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
         , matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), Vector{Int64}(undef, np), Vector{Int64}(undef, np), rkn_order4(particles.x, dt), dt)
     end
 end
@@ -131,7 +131,7 @@ function symplectic_RKN_order4!(p, pmover, kernel)
                 pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ 
                 pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
         
-        kernel(pmover.∂phi, p.x, p, pmover)
+        kernel(pmover.∂Φ, p.x, p, pmover)
     end
 end
 
@@ -150,34 +150,34 @@ end
     Updates X, V in place, and returns coefficients C, S at current time. 
 """
 function strang_splitting!(particles, pmover, kernel)  
-    pmover.phi .= 0
-    pmover.∂phi .= 0
+    pmover.Φ .= 0
+    pmover.∂Φ .= 0
     particles.x .+= particles.v .* pmover.dt/2
-    kernel(pmover.∂phi, particles.x, particles, pmover)
-    particles.v .+= pmover.dt .* pmover.∂phi
+    kernel(pmover.∂Φ, particles.x, particles, pmover)
+    particles.v .+= pmover.dt .* pmover.∂Φ
     particles.x .+= particles.v .* pmover.dt/2
-    kernel(pmover.∂phi, particles.x, particles, pmover)
+    kernel(pmover.∂Φ, particles.x, particles, pmover)
 end
 
 
 # ===== Kernel computations ==== #
 """
-Store ∂_x phi[f] computed at x
+Store ∂_x Φ[f] computed at x
 """
 function kernel_poisson!(dst, x, p, pmover)
     dst .= 0
-    pmover.phi .= 0
+    pmover.Φ .= 0
     for k=1:pmover.K        
         pmover.tmpcosk .= cos.(x .* (k * pmover.kx))
         pmover.tmpsink .= sin.(x .* (k * pmover.kx))
         pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
         pmover.S[k] = sum(pmover.tmpsink .* p.wei)
-        pmover.phi .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
+        pmover.Φ .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
         # line below computes -∂Φ[f](`x`) and stores it to `dst`
         dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
     end
     dst ./= π
-    pmover.phi .*= pmover.meshx.stop / (2*π^2)
+    pmover.Φ .*= pmover.meshx.stop / (2*π^2)
 end
 
 function kernel_gyrokinetic!(dst, x, p, pmover)
@@ -192,7 +192,7 @@ end
     Returns the square of the electrical energy
 """
 function compute_electricalenergy²(p, pmover)
-    return sum(p.wei .* pmover.phi)
+    return sum(p.wei .* pmover.Φ)
 end
 
 
@@ -220,15 +220,15 @@ end
 function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
     symplectic_RKN_order4!(p, pmover, kernel)
     # strang_splitting!(p, pmover, kernel)
-
+    
     periodic_boundary_conditions!(p, pmover)
-
+    
     E² = compute_electricalenergy²(p, pmover)
     return E², compute_momentum(p), compute_totalenergy²(p, E²)
 end
 
 
-function PIC_step!(p, meshx, meshv, dt, dphidx)
+function PIC_step!(p, meshx, meshv, dt, dΦdx)
     #=
     PIC step when supplying the derivative of the electrostatic potential
     =# 
@@ -242,12 +242,12 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
     idxonmesh[findall(i -> i < 1               ,  idxonmesh)] .+= meshx.len
     idxonmeshp1 = idxonmesh .+ 1
     idxonmeshp1[findall(i -> i > meshx.len,  idxonmeshp1)] .-= meshx.len
-    p.v .-= dt ./ 2 .* (dphidx[idxonmesh] .* (1 .- t) .+ dphidx[idxonmeshp1] .* t)
+    p.v .-= dt ./ 2 .* (dΦdx[idxonmesh] .* (1 .- t) .+ dΦdx[idxonmeshp1] .* t)
 
     # for ipart = 1:p.nbpart
     #     idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
     #     t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
-    #     p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
+    #     p.v[ipart] -= dt/2 * (dΦdx[idxgridx] * (1-t) + dΦdx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
     #     # # Periodic boundary conditions in velocity
     #     # if p.v[ipart] > meshv.stop
     #     #     p.v[ipart] -= meshv.stop - meshv.start
@@ -259,7 +259,7 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
     # for ipart = 1:p.nbpart
     #     idxgridx = Int64(fld(p.x[ipart], meshx.step)) + 1
     #     t = (p.x[ipart] - (idxgridx-1) * meshx.step) / meshx.step
-    #     p.v[ipart] -= dt/2 * (dphidx[idxgridx] * (1-t) + dphidx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
+    #     p.v[ipart] -= dt/2 * (dΦdx[idxgridx] * (1-t) + dΦdx[idxgridx < meshx.len ? idxgridx+1 : 1] * t)
     #     # Periodic boundary conditions in velocity
     #     # if p.v[ipart] > meshv.stop
     #     #     p.v[ipart] -= meshv.stop - meshv.start
@@ -274,11 +274,11 @@ function PIC_step!(p, meshx, meshv, dt, dphidx)
     idxonmesh[findall(i -> i < 1               ,  idxonmesh)] .+= meshx.len
     idxonmeshp1 .= idxonmesh .+ 1
     idxonmeshp1[findall(i -> i > meshx.len,  idxonmeshp1)] .-= meshx.len
-    p.v .-= dt ./ 2 .* (dphidx[idxonmesh] .* (1 .- t) .+ dphidx[idxonmeshp1] .* t)
+    p.v .-= dt ./ 2 .* (dΦdx[idxonmesh] .* (1 .- t) .+ dΦdx[idxonmeshp1] .* t)
 
 
 
-    return sqrt.(sum(dphidx.^2) * meshx.stop / p.nbpart)
+    return sqrt.(sum(dΦdx.^2) * meshx.stop / p.nbpart)
 end
 
 
@@ -329,26 +329,26 @@ function update_positions!(p, mesh, dt)
 end
 
 """
-update particle velocities vp (phi_v)
+update particle velocities vp (Φ_v)
 """
 function update_velocities!(p, pmover, dt)
     compute_S_C!(p, pmover)
-    pmover.phi .= 0
-    pmover.∂phi .= 0
+    pmover.Φ .= 0
+    pmover.∂Φ .= 0
 
     for k = 1:pmover.K
         pmover.tmpcosk .= cos.(k .* pmover.kx .* p.x)
         pmover.tmpsink .= sin.(k .* pmover.kx .* p.x)
-        pmover.phi   .+= (pmover.tmpcosk .* pmover.C[k] .+ pmover.tmpsink .* pmover.S[k]) ./ k^2
-        pmover.∂phi  .+= (.-pmover.tmpsink .* pmover.C[k] .+ pmover.tmpcosk .* pmover.S[k]) ./ k
+        pmover.Φ   .+= (pmover.tmpcosk .* pmover.C[k] .+ pmover.tmpsink .* pmover.S[k]) ./ k^2
+        pmover.∂Φ  .+= (.-pmover.tmpsink .* pmover.C[k] .+ pmover.tmpcosk .* pmover.S[k]) ./ k
     end
-    pmover.phi .*= pmover.meshx.stop / 2*π^2
-    pmover.∂phi ./= π
-    p.v .-= dt .* pmover.∂phi
+    pmover.Φ .*= pmover.meshx.stop / 2*π^2
+    pmover.∂Φ ./= π
+    p.v .-= dt .* pmover.∂Φ
 end
 
 """ S[k] = \\sum_l=1^n {\\beta_l * sin(k kx x_l)} et C[k] = \\sum_l=1^n {\\beta_l * cos(k kx x_l)}
-utile pour le calcul de la vitesse et du potentiel electrique phi"""
+utile pour le calcul de la vitesse et du potentiel electrique Φ"""
 function compute_S_C!(p, pmover)
     pmover.S .= 0
     pmover.C .= 0
@@ -394,23 +394,23 @@ function compute_rho!(p, pmover)
 end
 
 
-function compute_phi!(pmover) # solving poisson equation with FD solver
+function compute_Φ!(pmover) # solving poisson equation with FD solver
     dx = pmover.meshx.step
     L = pmover.meshx.stop
     
-    pmover.phi_grid .= pmover.poisson_matrix \ pmover.ρ
-    pmover.phi_grid .-= sum(pmover.phi_grid) * dx / L
+    pmover.Φ_grid .= pmover.poisson_matrix \ pmover.ρ
+    pmover.Φ_grid .-= sum(pmover.Φ_grid) * dx / L
 end
 
 function compute_int_E(p, pmover) # energy computed with a projection on the grid
     compute_rho!(p, pmover)
-    compute_phi!(pmover)
+    compute_Φ!(pmover)
     E = compute_E(pmover)
     return sum(E.^2) * pmover.meshx.step
 end
 
 function compute_E(pmover)
-    return -(circshift(pmover.phi_grid, 1) .- circshift(pmover.phi_grid, -1)) ./ (2*pmover.meshx.step)
+    return -(circshift(pmover.Φ_grid, 1) .- circshift(pmover.Φ_grid, -1)) ./ (2*pmover.meshx.step)
 end
 
 
