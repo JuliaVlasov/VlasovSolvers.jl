@@ -60,6 +60,8 @@ struct ParticleMover
     S ::Vector{Float64}
     tmpcosk ::Vector{Float64}
     tmpsink ::Vector{Float64}
+    tmpcoskimplicit ::Vector{Float64}
+    tmpsinkimplicit ::Vector{Float64}
     poisson_matrix
     ρ ::Vector{Float64}
     Φ_grid ::Vector{Float64}
@@ -85,8 +87,7 @@ struct ParticleMover
         matrix_poisson ./= meshx.step^2
 
 
-        new(Φ, ∂Φ, meshx, kx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink
-        , matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), Vector{Int64}(undef, np), Vector{Int64}(undef, np), rkn_order4(particles.x, dt), dt)
+        new(Φ, ∂Φ, meshx, kx, K, Vector{Float64}(undef, K), Vector{Float64}(undef, K), tmpcosk, tmpsink, similar(tmpcosk), similar(tmpsink), matrix_poisson, Vector{Float64}(undef, nx), Vector{Float64}(undef, nx), Vector{Int64}(undef, np), Vector{Int64}(undef, np), rkn_order4(particles.x, dt), dt)
     end
 end
 
@@ -121,7 +122,7 @@ function symplectic_RKN_order4!(p, pmover, kernel)
                                                              pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ 
                                                              pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
      
-            kernel(pmover.rkn.fg[:, s], pmover.rkn.G, p, pmover)
+            kernel(pmover.rkn.fg[:, s], pmover.rkn.G, p, pmover; coeffdt=0)
         end
     
         p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ 
@@ -159,23 +160,60 @@ function strang_splitting!(particles, pmover, kernel)
     kernel(pmover.∂Φ, particles.x, particles, pmover)
 end
 
+function strang_splitting_implicit!(particles, pmover, kernel)  
+    pmover.Φ .= 0
+    pmover.∂Φ .= 0
+    κ = 1/2
+    kernel(pmover.∂Φ, particles.x, particles, pmover; coeffdt=κ)
+    particles.v .+= pmover.dt./2 .* pmover.∂Φ
+    particles.x .+= particles.v .* pmover.dt
+    kernel(pmover.∂Φ, particles.x, particles, pmover; coeffdt=κ)
+    particles.v .+= pmover.dt./2 .* pmover.∂Φ
+    kernel(pmover.∂Φ, particles.x, particles, pmover)
+end
+
 
 # ===== Kernel computations ==== #
 """
-Store ∂_x Φ[f] computed at x
+Compute -∂_x Φ[f](`x` + `pmover.dt*coeffdt*p.v`) and stores it in `dst`. Also updates `pmover.Φ`
 """
-function kernel_poisson!(dst, x, p, pmover)
+function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
     dst .= 0
+    
+    if coeffdt > 0
+        pmover.tmpcoskimplicit .= similar(pmover.tmpcosk)
+        pmover.tmpsinkimplicit .= similar(pmover.tmpsink)
+    end
+    
     pmover.Φ .= 0
+
     for k=1:pmover.K        
         pmover.tmpcosk .= cos.(x .* (k * pmover.kx))
         pmover.tmpsink .= sin.(x .* (k * pmover.kx))
+        
+        if coeffdt > 0
+            pmover.tmpcoskimplicit .= cos.((x .+ pmover.dt.*coeffdt.*p.v) .* (k*pmover.kx))
+            pmover.tmpsinkimplicit .= sin.((x .+ pmover.dt.*coeffdt.*p.v) .* (k*pmover.kx))
+        end
+        
         pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
         pmover.S[k] = sum(pmover.tmpsink .* p.wei)
+        
+        if coeffdt > 0 
+            pmover.C[k] += .- sum(p.v .* pmover.tmpsink .* p.wei) * k * 2π / pmover.meshx.stop * pmover.dt * coeffdt
+            pmover.S[k] +=    sum(p.v .* pmover.tmpcosk .* p.wei) * k * 2π / pmover.meshx.stop * pmover.dt * coeffdt
+        end
+
+        if coeffdt > 0
+            pmover.tmpcosk .= pmover.tmpcoskimplicit
+            pmover.tmpsink .= pmover.tmpsinkimplicit
+        end
+        
         pmover.Φ .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
         # line below computes -∂Φ[f](`x`) and stores it to `dst`
-        dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) / k
+        dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) ./ k
     end
+    
     dst ./= π
     pmover.Φ .*= pmover.meshx.stop / (2*π^2)
 end
@@ -218,8 +256,9 @@ end
 
 
 function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
-    symplectic_RKN_order4!(p, pmover, kernel)
+    # symplectic_RKN_order4!(p, pmover, kernel)
     # strang_splitting!(p, pmover, kernel)
+    strang_splitting_implicit!(p, pmover, kernel)
     
     periodic_boundary_conditions!(p, pmover)
     
