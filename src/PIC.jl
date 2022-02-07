@@ -190,7 +190,7 @@ function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
     for k=1:pmover.K        
         pmover.tmpcosk .= cos.(x .* (k * pmover.kx))
         pmover.tmpsink .= sin.(x .* (k * pmover.kx))
-        
+
         if coeffdt > 0
             pmover.tmpcoskimplicit .= cos.((x .+ pmover.dt.*coeffdt.*p.v) .* (k*pmover.kx))
             pmover.tmpsinkimplicit .= sin.((x .+ pmover.dt.*coeffdt.*p.v) .* (k*pmover.kx))
@@ -200,8 +200,8 @@ function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
         pmover.S[k] = sum(pmover.tmpsink .* p.wei)
         
         if coeffdt > 0 
-            pmover.C[k] += .- sum(p.v .* pmover.tmpsink .* p.wei) * k * 2π / pmover.meshx.stop * pmover.dt * coeffdt
-            pmover.S[k] +=    sum(p.v .* pmover.tmpcosk .* p.wei) * k * 2π / pmover.meshx.stop * pmover.dt * coeffdt
+            pmover.C[k] += -sum(p.v .* pmover.tmpsink .* p.wei) * k * 2π / pmover.meshx.stop * pmover.dt * coeffdt
+            pmover.S[k] +=  sum(p.v .* pmover.tmpcosk .* p.wei) * k * 2π / pmover.meshx.stop * pmover.dt * coeffdt
         end
 
         if coeffdt > 0
@@ -256,9 +256,9 @@ end
 
 
 function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
-    # symplectic_RKN_order4!(p, pmover, kernel)
+    symplectic_RKN_order4!(p, pmover, kernel)
     # strang_splitting!(p, pmover, kernel)
-    strang_splitting_implicit!(p, pmover, kernel)
+    # strang_splitting_implicit!(p, pmover, kernel)
     
     periodic_boundary_conditions!(p, pmover)
     
