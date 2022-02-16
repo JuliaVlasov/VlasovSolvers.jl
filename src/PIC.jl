@@ -210,8 +210,9 @@ function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
         end
         
         pmover.Φ .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
-        # line below computes -∂Φ[f](`x`) and stores it to `dst`
-        dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) ./ k
+        # The line below computes -∂Φ[f](`x`) and stores it to `dst`. 
+        # Change the ".+=" to a ".-=" to have an attractive potential.
+        dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) ./ k 
     end
     
     dst ./= π
