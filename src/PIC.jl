@@ -118,19 +118,19 @@ end
 function symplectic_RKN_order4!(p, pmover, kernel)
     @views begin
         for s=1:3
-            pmover.rkn.G .= p.x .+ p.v .* pmover.rkn.c[s] .+ pmover.rkn.a[s, 1] .* pmover.rkn.fg[:, 1] .+ 
-                                                             pmover.rkn.a[s, 2] .* pmover.rkn.fg[:, 2] .+ 
-                                                             pmover.rkn.a[s, 3] .* pmover.rkn.fg[:, 3]
+            @. pmover.rkn.G = p.x + p.v * pmover.rkn.c[s] + pmover.rkn.a[s, 1] * pmover.rkn.fg[:, 1] + 
+                                                             pmover.rkn.a[s, 2] * pmover.rkn.fg[:, 2] + 
+                                                             pmover.rkn.a[s, 3] * pmover.rkn.fg[:, 3]
      
             kernel(pmover.rkn.fg[:, s], pmover.rkn.G, p, pmover; coeffdt=0)
         end
     
-        p.x .+= pmover.dt .* p.v .+ pmover.rkn.b̄[1] .* pmover.rkn.fg[:, 1] .+ 
-                                    pmover.rkn.b̄[2] .* pmover.rkn.fg[:, 2] .+ 
-                                    pmover.rkn.b̄[3] .* pmover.rkn.fg[:, 3]
-        p.v .+= pmover.rkn.b[1] .* pmover.rkn.fg[:, 1] .+ 
-                pmover.rkn.b[2] .* pmover.rkn.fg[:, 2] .+ 
-                pmover.rkn.b[3] .* pmover.rkn.fg[:, 3]
+        @. p.x += pmover.dt * p.v + pmover.rkn.b̄[1] * pmover.rkn.fg[:, 1] + 
+                                    pmover.rkn.b̄[2] * pmover.rkn.fg[:, 2] + 
+                                    pmover.rkn.b̄[3] * pmover.rkn.fg[:, 3]
+        @. p.v += pmover.rkn.b[1] * pmover.rkn.fg[:, 1] + 
+                    pmover.rkn.b[2] * pmover.rkn.fg[:, 2] + 
+                    pmover.rkn.b[3] * pmover.rkn.fg[:, 3]
         
         kernel(pmover.∂Φ, p.x, p, pmover)
     end
@@ -153,10 +153,10 @@ end
 function strang_splitting!(particles, pmover, kernel)  
     pmover.Φ .= 0
     pmover.∂Φ .= 0
-    particles.x .+= particles.v .* pmover.dt/2
+    @. particles.x += particles.v * pmover.dt / 2
     kernel(pmover.∂Φ, particles.x, particles, pmover)
-    particles.v .+= pmover.dt .* pmover.∂Φ
-    particles.x .+= particles.v .* pmover.dt/2
+    @. particles.v += pmover.dt * pmover.∂Φ
+    @. particles.x += particles.v * pmover.dt / 2
     kernel(pmover.∂Φ, particles.x, particles, pmover)
 end
 
@@ -165,10 +165,10 @@ function strang_splitting_implicit!(particles, pmover, kernel)
     pmover.∂Φ .= 0
     κ = 1/2
     kernel(pmover.∂Φ, particles.x, particles, pmover; coeffdt=κ)
-    particles.v .+= pmover.dt./2 .* pmover.∂Φ
-    particles.x .+= particles.v .* pmover.dt
+    @. particles.v += pmover.dt / 2 * pmover.∂Φ
+    @. particles.x += particles.v * pmover.dt
     kernel(pmover.∂Φ, particles.x, particles, pmover; coeffdt=κ)
-    particles.v .+= pmover.dt./2 .* pmover.∂Φ
+    @. particles.v += pmover.dt / 2 * pmover.∂Φ
     kernel(pmover.∂Φ, particles.x, particles, pmover)
 end
 
@@ -188,12 +188,12 @@ function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
     pmover.Φ .= 0
 
     for k=1:pmover.K        
-        pmover.tmpcosk .= cos.(x .* (k * pmover.kx))
-        pmover.tmpsink .= sin.(x .* (k * pmover.kx))
+        @. pmover.tmpcosk = cos(x * (k * pmover.kx))
+        @. pmover.tmpsink = sin(x * (k * pmover.kx))
 
         if coeffdt > 0
-            pmover.tmpcoskimplicit .= cos.((x .+ pmover.dt.*coeffdt.*p.v) .* (k*pmover.kx))
-            pmover.tmpsinkimplicit .= sin.((x .+ pmover.dt.*coeffdt.*p.v) .* (k*pmover.kx))
+            @. pmover.tmpcoskimplicit = cos((x + pmover.dt * coeffdt * p.v) * (k * pmover.kx))
+            @. pmover.tmpsinkimplicit = sin((x + pmover.dt * coeffdt * p.v) * (k * pmover.kx))
         end
         
         pmover.C[k] = sum(pmover.tmpcosk .* p.wei)
@@ -209,10 +209,10 @@ function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
             pmover.tmpsink .= pmover.tmpsinkimplicit
         end
         
-        pmover.Φ .+= (pmover.C[k] .* pmover.tmpcosk .+ pmover.S[k] .* pmover.tmpsink) ./ k^2
+        @. pmover.Φ += (pmover.C[k] * pmover.tmpcosk + pmover.S[k] * pmover.tmpsink) / k^2
         # The line below computes -∂Φ[f](`x`) and stores it to `dst`. 
-        # Change the ".+=" to a ".-=" to have an attractive potential.
-        dst .+= (pmover.C[k] .* pmover.tmpsink .- pmover.S[k] .* pmover.tmpcosk) ./ k 
+        # Change the "+=" to a "-=" to have an attractive potential.
+        @. dst += (pmover.C[k] * pmover.tmpsink - pmover.S[k] .* pmover.tmpcosk) / k 
     end
     
     dst ./= π
