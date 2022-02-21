@@ -211,7 +211,9 @@ function kernel_poisson!(dst, x, p, pmover; coeffdt=0)
         
         @. pmover.Φ += (pmover.C[k] * pmover.tmpcosk + pmover.S[k] * pmover.tmpsink) / k^2
         # The line below computes -∂Φ[f](`x`) and stores it to `dst`. 
-        # Change the "+=" to a "-=" to have an attractive potential.
+        # Changing dynamics : 
+        #   "+=": repulsive potential (plasmas dynamics)
+        #   "-=": attractive potential (galaxies dynamics)
         @. dst += (pmover.C[k] * pmover.tmpsink - pmover.S[k] .* pmover.tmpcosk) / k 
     end
     
@@ -256,7 +258,7 @@ end
 
 
 
-function PIC_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
+function PF_step!(p::Particles, pmover::ParticleMover; kernel=kernel_poisson!)
     symplectic_RKN_order4!(p, pmover, kernel)
     # strang_splitting!(p, pmover, kernel)
     # strang_splitting_implicit!(p, pmover, kernel)
