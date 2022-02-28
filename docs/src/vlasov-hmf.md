@@ -1,35 +1,33 @@
 # Vlasov HMF
 
-<!-- #region -->
 In this example we will show how the VlasovSolvers package can be used to solve the Vlasov equation in the Hamiltonian Mean Field framework (usually called Vlasov-HMF).
 
 The Vlasov-HMF system is a simplification of the Vlasov-Poisson system, which is itself a simplification of the Vlasov-Maxwell equations.
 
 
 Recall the Vlasov-Poisson equations in the noncollisional case:
-$$
+```math
 \partial_t f(t,x,v) + v\cdot \partial_x f(t,x,v) + E(t,x)\cdot \partial_v f(t,x,v) = 0
-$$
+```
 
 The quantity $E(t,x)$ is the electric field, defined in the Poisson framework by
-$$
+```math
 -\Delta \Phi = 1 - \rho,\, E = -\nabla \Phi,\, \rho(t,x) = \int f(t,x,v)dv
-$$
+```
 
 The Poisson equation $-\Delta \Phi = 1 - \rho$ on a periodic space-domain $[0, L]$ is usually solved by means of a Fourier
 transform, assuming $\Phi$ has a zero average. In the discrete case this is performed by a DFT, involving $N_x$ Fourier
  modes in total (where $N_x$ is the number of spatial nodes). In the HMF framework, we apply the same idea but restrict
 ourselves to the Fourier modes corresponding to the frequencies $k=\pm 1$ (the mode corresponding to $k=0$ is zero 
 since $\Phi$ has a zero average).
-<!-- #endregion -->
 
-```julia
+```@example hmf
 using LinearAlgebra, QuadGK, Roots, FFTW
 using VlasovSolvers
 using Plots
 ```
 
-```julia
+```@example hmf
 function mag(β, mass)
     F(m) = begin
         g(x, n, m) = (1 / π) * (exp(β * m * cos(x)) * cos(n * x))
@@ -41,13 +39,13 @@ function mag(β, mass)
 end
 ```
 
-```julia
+```@example hmf
 function Norm(f::Array{Float64,2}, delta1, delta2)
     delta1 * sum(delta2 * sum(real(f), dims=1))
 end
 ```
 
-```julia
+```@example hmf
 """
     hmf_poisson!(fᵗ    :: Array{Complex{Float64},2},
                  mesh1 :: OneDGrid,
@@ -73,7 +71,7 @@ function hmf_poisson!(fᵗ::Array{Complex{Float64},2},
 end
 ```
 
-```julia
+```@example hmf
 dev = CPU()
 nsteps = 1000
 dt = 0.1
@@ -108,40 +106,40 @@ contour(mesh1.points, mesh2.points, real(fᵗ))
 Compute the electrical energy in ``hmf_poisson!`` and display it.
 
 We also analytically compute E(0, x) to assess the correctness of the numerical computation. We have
-$$
+```math
 E(t,x) = -\partial_x\Phi(t,x),
-$$
+```
 where
-$$
+```math
 \Phi(t,x) = \frac{1}{\pi}\int_{[-\pi, \pi]\times \mathbb{R}} \cos(x-y)f(t,y,v)dydv.
-$$
+```
 
 By trigonometrical rules, we obtain
-$$
+```math
 \Phi(t,x) = \frac{\cos(x)}{\pi}\int_{[-\pi, \pi]\times \mathbb{R}} \cos(y)f(t,y,v)dydv,
-$$
+```
 where we used the oddness of the mapping $y\mapsto sin(y)f(t,y,v)$ to forget about the second integral that should
 appear. Using the formula for $f$
-$$
+```math
 f(0, y, v) = a \exp(-b(v^2/2 - m\cos(y))) (1 + \epsilon\cos(y)),
-$$
+```
 we obtain after some manipulations 
-$$
+```math
 \Phi(0,x) = 2a \sqrt{\frac{2\pi}{b}} \cos(x) \left( I_1(bm) + \frac{\epsilon}{2} (I_0(bm)+I_2(bm)) \right).
-$$
+```
 Here $t\mapsto I_\nu(t)$ denotes the modified Bessel function of the first kind, of order $\nu \in \mathbb{N}$. The multiplicative 
 coefficient 2 comes from the definition of $I_\nu$:
-$$
+```math
 I_\nu(t) = \frac{1}{\pi}\int_{[0, \pi]} e^{t\cos(y)}\cos(\nu y)dy = \frac{1}{2\pi} \int_{[-\pi, \pi]} e^{t\cos(y)}\cos(\nu y)dy
-$$
+```
 
 For the parameters chosen, we obtain that 
-$$
+```math
 \Phi(0,x) = \alpha \cos(x),\, E(0, x) = -\partial_x \Phi(0, x) = \alpha \sin(x)
-$$
+```
 where $\alpha = 0.32962331549891355$.
 
-```julia
+```@example hmf
 ex = zeros(Float64,n1)
 hmf_poisson!(fᵗ, mesh1, mesh2, ex)
 test = copy(f)
@@ -151,7 +149,7 @@ plot(x, ex, label="E(t,x)", minorgrid=true)
 plot!(x, α*sin.(x), markershape=:circle, linewidth=0, label="αsin(x)")
 ```
 
-```julia
+```@example hmf
 maximum(ex) - α
 ```
 
@@ -176,14 +174,14 @@ The results are to be compared with those obtained by solving the Vlasov-Poisson
 
 
 Here we consider $x\in[0, 2\pi/k_x]$, with $k_x$ some parameter. The initial condition reads
-$$
+```math
 f_0(x,v) = (1+\epsilon \cos(k_x x)) \frac{e^{-v^2/2}}{\sqrt{2\pi}}
-$$
+
 
 
 #### $k_x = 0.5$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -226,7 +224,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 period = 2π / 1.4156
@@ -248,7 +246,7 @@ plot!(legend=:topright)
 
 #### $k_x = 0.4$ 
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -291,7 +289,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 period = 2π / 1.2850
@@ -316,14 +314,14 @@ plot!(legend=:topright)
 
 
 Again, we consider $x\in [0, 2\pi/k_x]$. The initial condition reads 
-$$
+```math
 f_0(x,v) = (1+\epsilon\cos(k_x x)) \frac{e^{-(v+v_0)^2/2} + e^{-(v-v_0)^2/2}}{2\sqrt{2\pi}}
-$$
+```
 
 
 #### $k_x=0.2, v_0=1.3$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -367,7 +365,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 plot(t, log.(Etsi), xlabel = "t", minorgrid=true, label="log(E(t))")
@@ -387,7 +385,7 @@ plot!(legend=:bottomright)
 
 #### $k_x = 0.2, v_0 = 3.0$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -430,7 +428,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 plot(t, log.(Etsi), xlabel = "t", minorgrid=true, label="log(E(t))")
