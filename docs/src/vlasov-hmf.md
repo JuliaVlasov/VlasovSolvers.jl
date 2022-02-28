@@ -176,7 +176,7 @@ The results are to be compared with those obtained by solving the Vlasov-Poisson
 Here we consider $x\in[0, 2\pi/k_x]$, with $k_x$ some parameter. The initial condition reads
 ```math
 f_0(x,v) = (1+\epsilon \cos(k_x x)) \frac{e^{-v^2/2}}{\sqrt{2\pi}}
-
+```
 
 
 #### $k_x = 0.5$
