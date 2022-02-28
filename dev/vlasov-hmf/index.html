@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Vlasov-HMF · VlasovSolvers.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link rel="canonical" href="https://juliavlasov.github.io/VlasovSolvers.jl/vlasov-hmf/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="VlasovSolvers.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">VlasovSolvers.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../problem/">Problem type</a></li><li><a class="tocitem" href="../vlasov-poisson/">Vlasov-Poisson</a></li><li><a class="tocitem" href="../vlasov-ampere/">Vlasov-Ampere</a></li><li><a class="tocitem" href="../bump_on_tail/">Bump On Tail</a></li><li><a class="tocitem" href="../rotation2d/">Rotation 2D</a></li><li class="is-active"><a class="tocitem" href>Vlasov-HMF</a><ul class="internal"><li><a class="tocitem" href="#Benchmarks"><span>Benchmarks</span></a></li><li><a class="tocitem" href="#Conclusion"><span>Conclusion</span></a></li></ul></li><li><a class="tocitem" href="../tsi/">Two-stream instability</a></li><li><a class="tocitem" href="../contents/">Contents</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Vlasov-HMF</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Vlasov-HMF</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaVlasov/VlasovSolvers.jl/blob/master/docs/src/vlasov-hmf.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Vlasov-HMF"><a class="docs-heading-anchor" href="#Vlasov-HMF">Vlasov HMF</a><a id="Vlasov-HMF-1"></a><a class="docs-heading-anchor-permalink" href="#Vlasov-HMF" title="Permalink"></a></h1><p>&lt;!– #region –&gt; In this example we will show how the VlasovSolvers package can be used to solve the Vlasov equation in the Hamiltonian Mean Field framework (usually called Vlasov-HMF).</p><p>The Vlasov-HMF system is a simplification of the Vlasov-Poisson system, which is itself a simplification of the Vlasov-Maxwell equations.</p><p>Recall the Vlasov-Poisson equations in the noncollisional case: $ \partial<em>t f(t,x,v) + v\cdot \partial</em>x f(t,x,v) + E(t,x)\cdot \partial_v f(t,x,v) = 0 $</p><p>The quantity <span>$E(t,x)$</span> is the electric field, defined in the Poisson framework by $ -\Delta \Phi = 1 - \rho,\, E = -\nabla \Phi,\, \rho(t,x) = \int f(t,x,v)dv $</p><p>The Poisson equation <span>$-\Delta \Phi = 1 - \rho$</span> on a periodic space-domain <span>$[0, L]$</span> is usually solved by means of a Fourier transform, assuming <span>$\Phi$</span> has a zero average. In the discrete case this is performed by a DFT, involving <span>$N_x$</span> Fourier  modes in total (where <span>$N_x$</span> is the number of spatial nodes). In the HMF framework, we apply the same idea but restrict ourselves to the Fourier modes corresponding to the frequencies <span>$k=\pm 1$</span> (the mode corresponding to <span>$k=0$</span> is zero  since <span>$\Phi$</span> has a zero average). &lt;!– #endregion –&gt;</p><pre><code class="language-julia hljs">using LinearAlgebra, QuadGK, Roots, FFTW
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Vlasov-HMF · VlasovSolvers.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link rel="canonical" href="https://juliavlasov.github.io/VlasovSolvers.jl/vlasov-hmf/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="VlasovSolvers.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">VlasovSolvers.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../problem/">Problem type</a></li><li><a class="tocitem" href="../vlasov-poisson/">Vlasov-Poisson</a></li><li><a class="tocitem" href="../vlasov-ampere/">Vlasov-Ampere</a></li><li><a class="tocitem" href="../bump_on_tail/">Bump On Tail</a></li><li><a class="tocitem" href="../rotation2d/">Rotation 2D</a></li><li class="is-active"><a class="tocitem" href>Vlasov-HMF</a><ul class="internal"><li><a class="tocitem" href="#Benchmarks"><span>Benchmarks</span></a></li><li class="toplevel"><a class="tocitem" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.1533,"><span>For this set of parameters the expected damping coefficient is -0.1533,</span></a></li><li class="toplevel"><a class="tocitem" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.4156."><span>and the &quot;period of the damping&quot; is ≈2π/1.4156.</span></a></li><li class="toplevel"><a class="tocitem" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156."><span>Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.4156.</span></a></li><li class="toplevel"><a class="tocitem" href="#Each-period-in-the-energy-is-materialized-by-2-bumps."><span>Each period in the energy is materialized by 2 bumps.</span></a></li><li class="toplevel"><a class="tocitem" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.0661,"><span>For this set of parameters the expected damping coefficient is -0.0661,</span></a></li><li class="toplevel"><a class="tocitem" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.2850."><span>and the &quot;period of the damping&quot; is ≈2π/1.2850.</span></a></li><li class="toplevel"><a class="tocitem" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156.-2"><span>Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.4156.</span></a></li><li class="toplevel"><a class="tocitem" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.-2"><span>Each period in the energy is materialized by 2 bumps.</span></a></li><li class="toplevel"><a class="tocitem" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.00104"><span>For this set of parameters the expected damping coefficient is -0.00104</span></a></li><li class="toplevel"><a class="tocitem" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.1648."><span>and the &quot;period of the damping&quot; is ≈2π/1.1648.</span></a></li><li class="toplevel"><a class="tocitem" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.1648."><span>Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.1648.</span></a></li><li class="toplevel"><a class="tocitem" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.-3"><span>Each period in the energy is materialized by 2 bumps.</span></a></li><li class="toplevel"><a class="tocitem" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.2845."><span>For this set of parameters the expected damping coefficient is +0.2845.</span></a></li><li><a class="tocitem" href="#Conclusion"><span>Conclusion</span></a></li></ul></li><li><a class="tocitem" href="../tsi/">Two-stream instability</a></li><li><a class="tocitem" href="../contents/">Contents</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Vlasov-HMF</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Vlasov-HMF</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaVlasov/VlasovSolvers.jl/blob/master/docs/src/vlasov-hmf.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Vlasov-HMF"><a class="docs-heading-anchor" href="#Vlasov-HMF">Vlasov HMF</a><a id="Vlasov-HMF-1"></a><a class="docs-heading-anchor-permalink" href="#Vlasov-HMF" title="Permalink"></a></h1><p>In this example we will show how the VlasovSolvers package can be used to solve the Vlasov equation in the Hamiltonian Mean Field framework (usually called Vlasov-HMF).</p><p>The Vlasov-HMF system is a simplification of the Vlasov-Poisson system, which is itself a simplification of the Vlasov-Maxwell equations.</p><p>Recall the Vlasov-Poisson equations in the noncollisional case:</p><p class="math-container">\[\partial_t f(t,x,v) + v\cdot \partial_x f(t,x,v) + E(t,x)\cdot \partial_v f(t,x,v) = 0\]</p><p>The quantity <span>$E(t,x)$</span> is the electric field, defined in the Poisson framework by</p><p class="math-container">\[-\Delta \Phi = 1 - \rho,\, E = -\nabla \Phi,\, \rho(t,x) = \int f(t,x,v)dv\]</p><p>The Poisson equation <span>$-\Delta \Phi = 1 - \rho$</span> on a periodic space-domain <span>$[0, L]$</span> is usually solved by means of a Fourier transform, assuming <span>$\Phi$</span> has a zero average. In the discrete case this is performed by a DFT, involving <span>$N_x$</span> Fourier  modes in total (where <span>$N_x$</span> is the number of spatial nodes). In the HMF framework, we apply the same idea but restrict ourselves to the Fourier modes corresponding to the frequencies <span>$k=\pm 1$</span> (the mode corresponding to <span>$k=0$</span> is zero  since <span>$\Phi$</span> has a zero average).</p><pre><code class="language-julia hljs">using LinearAlgebra, QuadGK, Roots, FFTW
 using VlasovSolvers
 using Plots</code></pre><pre><code class="language-julia hljs">function mag(β, mass)
     F(m) = begin
@@ -61,217 +61,42 @@ a   = mass / Norm(real(f), delta1, delta2)
 
 transpose!(fᵗ, f)
 @show size(f), size(fᵗ)
-contour(mesh1.points, mesh2.points, real(fᵗ))</code></pre><p>Compute the electrical energy in <span>$hmf_poisson!$</span> and display it.</p><p>We also analytically compute E(0, x) to assess the correctness of the numerical computation. We have $ E(t,x) = -\partial<em>x\Phi(t,x), $ where $ \Phi(t,x) = \frac{1}{\pi}\int</em>{[-\pi, \pi]\times \mathbb{R}} \cos(x-y)f(t,y,v)dydv. $</p><p>By trigonometrical rules, we obtain $ \Phi(t,x) = \frac{\cos(x)}{\pi}\int<em>{[-\pi, \pi]\times \mathbb{R}} \cos(y)f(t,y,v)dydv, $ where we used the oddness of the mapping <span>$y\mapsto sin(y)f(t,y,v)$</span> to forget about the second integral that should appear. Using the formula for <span>$f$</span> $ f(0, y, v) = a \exp(-b(v^2/2 - m\cos(y))) (1 + \epsilon\cos(y)), $ we obtain after some manipulations  $ \Phi(0,x) = 2a \sqrt{\frac{2\pi}{b}} \cos(x) \left( I</em>1(bm) + \frac{\epsilon}{2} (I<em>0(bm)+I</em>2(bm)) \right). $ Here <span>$t\mapsto I_\nu(t)$</span> denotes the modified Bessel function of the first kind, of order <span>$\nu \in \mathbb{N}$</span>. The multiplicative  coefficient 2 comes from the definition of <span>$I_\nu$</span>: $ I<em>\nu(t) = \frac{1}{\pi}\int</em>{[0, \pi]} e^{t\cos(y)}\cos(\nu y)dy = \frac{1}{2\pi} \int_{[-\pi, \pi]} e^{t\cos(y)}\cos(\nu y)dy $</p><p>For the parameters chosen, we obtain that  $ \Phi(0,x) = \alpha \cos(x),\, E(0, x) = -\partial_x \Phi(0, x) = \alpha \sin(x) $ where <span>$\alpha = 0.32962331549891355$</span>.</p><pre><code class="language-julia hljs">ex = zeros(Float64,n1)
+contour(mesh1.points, mesh2.points, real(fᵗ))</code></pre><p>Compute the electrical energy in <span>$hmf_poisson!$</span> and display it.</p><p>We also analytically compute E(0, x) to assess the correctness of the numerical computation. We have</p><p class="math-container">\[E(t,x) = -\partial_x\Phi(t,x),\]</p><p>where</p><p class="math-container">\[\Phi(t,x) = \frac{1}{\pi}\int_{[-\pi, \pi]\times \mathbb{R}} \cos(x-y)f(t,y,v)dydv.\]</p><p>By trigonometrical rules, we obtain</p><p class="math-container">\[\Phi(t,x) = \frac{\cos(x)}{\pi}\int_{[-\pi, \pi]\times \mathbb{R}} \cos(y)f(t,y,v)dydv,\]</p><p>where we used the oddness of the mapping <span>$y\mapsto sin(y)f(t,y,v)$</span> to forget about the second integral that should appear. Using the formula for <span>$f$</span></p><p class="math-container">\[f(0, y, v) = a \exp(-b(v^2/2 - m\cos(y))) (1 + \epsilon\cos(y)),\]</p><p>we obtain after some manipulations </p><p class="math-container">\[\Phi(0,x) = 2a \sqrt{\frac{2\pi}{b}} \cos(x) \left( I_1(bm) + \frac{\epsilon}{2} (I_0(bm)+I_2(bm)) \right).\]</p><p>Here <span>$t\mapsto I_\nu(t)$</span> denotes the modified Bessel function of the first kind, of order <span>$\nu \in \mathbb{N}$</span>. The multiplicative  coefficient 2 comes from the definition of <span>$I_\nu$</span>:</p><p class="math-container">\[I_\nu(t) = \frac{1}{\pi}\int_{[0, \pi]} e^{t\cos(y)}\cos(\nu y)dy = \frac{1}{2\pi} \int_{[-\pi, \pi]} e^{t\cos(y)}\cos(\nu y)dy\]</p><p>For the parameters chosen, we obtain that </p><p class="math-container">\[\Phi(0,x) = \alpha \cos(x),\, E(0, x) = -\partial_x \Phi(0, x) = \alpha \sin(x)\]</p><p>where <span>$\alpha = 0.32962331549891355$</span>.</p><pre><code class="language-julia hljs">ex = zeros(Float64,n1)
 hmf_poisson!(fᵗ, mesh1, mesh2, ex)
 test = copy(f)
 T = Float64[]
 plot(x, ex, label=&quot;E(t,x)&quot;, minorgrid=true)
 α = 0.32962331549891355
-plot!(x, α*sin.(x), markershape=:circle, linewidth=0, label=&quot;αsin(x)&quot;)</code></pre><pre><code class="language-julia hljs">maximum(ex) - α</code></pre><p>Hence our numerical computation of <span>$ex$</span> through <span>$hmf_poisson!$</span> gives the expected result.</p><h2 id="Benchmarks"><a class="docs-heading-anchor" href="#Benchmarks">Benchmarks</a><a id="Benchmarks-1"></a><a class="docs-heading-anchor-permalink" href="#Benchmarks" title="Permalink"></a></h2><p>We can sometimes find in the literature that the Vlasov-HMF model is a good simplified version of the Vlasov-Poisson equations, since it models the expected behavior quite remarkably. Another way of saying it is that after a short time only the Fourier modes <span>$k=\pm 1$</span> remain, the others vanishing rapidly. </p><p>To  illustrate this numerically, we apply the above code – which solves the Vlasov-HMF equations – to the examples  used in the Vlasov-Poisson case. The theoretical analysis for the analytical results can be found in the book  Numerical Methods for the Vlasov-Maxwell Equations from E. Sonnendrücker.</p><p>The results are to be compared with those obtained by solving the Vlasov-Poisson equations.</p><h3 id="Landau-damping"><a class="docs-heading-anchor" href="#Landau-damping">Landau damping</a><a id="Landau-damping-1"></a><a class="docs-heading-anchor-permalink" href="#Landau-damping" title="Permalink"></a></h3><p>Here we consider <span>$x\in[0, 2\pi/k_x]$</span>, with <span>$k_x$</span> some parameter. The initial condition reads $ f<em>0(x,v) = (1+\epsilon \cos(k</em>x x)) \frac{e^{-v^2/2}}{\sqrt{2\pi}} $</p><h4 id="k_x-0.5"><a class="docs-heading-anchor" href="#k_x-0.5"><span>$k_x = 0.5$</span></a><a id="k_x-0.5-1"></a><a class="docs-heading-anchor-permalink" href="#k_x-0.5" title="Permalink"></a></h4><pre><code class="language-julia hljs">import VlasovSolvers: advection!
+plot!(x, α*sin.(x), markershape=:circle, linewidth=0, label=&quot;αsin(x)&quot;)</code></pre><pre><code class="language-julia hljs">maximum(ex) - α</code></pre><p>Hence our numerical computation of <span>$ex$</span> through <span>$hmf_poisson!$</span> gives the expected result.</p><h2 id="Benchmarks"><a class="docs-heading-anchor" href="#Benchmarks">Benchmarks</a><a id="Benchmarks-1"></a><a class="docs-heading-anchor-permalink" href="#Benchmarks" title="Permalink"></a></h2><p>We can sometimes find in the literature that the Vlasov-HMF model is a good simplified version of the Vlasov-Poisson equations, since it models the expected behavior quite remarkably. Another way of saying it is that after a short time only the Fourier modes <span>$k=\pm 1$</span> remain, the others vanishing rapidly. </p><p>To  illustrate this numerically, we apply the above code – which solves the Vlasov-HMF equations – to the examples  used in the Vlasov-Poisson case. The theoretical analysis for the analytical results can be found in the book  Numerical Methods for the Vlasov-Maxwell Equations from E. Sonnendrücker.</p><p>The results are to be compared with those obtained by solving the Vlasov-Poisson equations.</p><h3 id="Landau-damping"><a class="docs-heading-anchor" href="#Landau-damping">Landau damping</a><a id="Landau-damping-1"></a><a class="docs-heading-anchor-permalink" href="#Landau-damping" title="Permalink"></a></h3><p>Here we consider <span>$x\in[0, 2\pi/k_x]$</span>, with <span>$k_x$</span> some parameter. The initial condition reads</p><p class="math-container">\[f_0(x,v) = (1+\epsilon \cos(k_x x)) \frac{e^{-v^2/2}}{\sqrt{2\pi}}
 
-dev = CPU()
-nsteps = 500
-dt = 0.1
 
-ϵ = 0.01
-kx = 0.5
-# For this set of parameters the expected damping coefficient is -0.1533,
-# and the &quot;period of the damping&quot; is ≈2π/1.4156.
 
-mesh1 = OneDGrid(dev, 64, 0, 2π / kx)
-mesh2 = OneDGrid(dev, 128, -10, 10)
-
-n1, delta1 = mesh1.len, mesh1.step
-n2, delta2 = mesh2.len, mesh2.step
-x, v = mesh1.points, mesh2.points&#39;
-
-flandau  = zeros(Complex{Float64}, (n1,n2))
-flandauᵗ = zeros(Complex{Float64}, (n2,n1))
-
-@. flandau  = exp(-v^2 / 2) * (1 + ϵ * cos(x*kx)) / sqrt(2π)
+#### $k_x = 0.5$
+\]</p><p>julia import VlasovSolvers: advection!</p><p>dev = CPU() nsteps = 500 dt = 0.1</p><p>ϵ = 0.01 kx = 0.5</p><h1 id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.1533,"><a class="docs-heading-anchor" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.1533,">For this set of parameters the expected damping coefficient is -0.1533,</a><a id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.1533,-1"></a><a class="docs-heading-anchor-permalink" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.1533," title="Permalink"></a></h1><h1 id="and-the-&quot;period-of-the-damping&quot;-is-2π/1.4156."><a class="docs-heading-anchor" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.4156.">and the &quot;period of the damping&quot; is ≈2π/1.4156.</a><a id="and-the-&quot;period-of-the-damping&quot;-is-2π/1.4156.-1"></a><a class="docs-heading-anchor-permalink" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.4156." title="Permalink"></a></h1><p>mesh1 = OneDGrid(dev, 64, 0, 2π / kx) mesh2 = OneDGrid(dev, 128, -10, 10)</p><p>n1, delta1 = mesh1.len, mesh1.step n2, delta2 = mesh2.len, mesh2.step x, v = mesh1.points, mesh2.points&#39;</p><p>flandau  = zeros(Complex{Float64}, (n1,n2)) flandauᵗ = zeros(Complex{Float64}, (n2,n1))</p><p>@. flandau  = exp(-v^2 / 2) * (1 + ϵ * cos(x*kx)) / sqrt(2π) transpose!(flandauᵗ, flandau)</p><p>Elandau = Array{Float64}(undef, nsteps)</p><p>ex = zeros(Float64,n1) hmf_poisson!(flandauᵗ, mesh1, mesh2, ex) advection!(flandauᵗ, mesh2, ex, 0.5dt)</p><p>for n in 1:nsteps     Elandau[n] = sqrt(sum(ex.^2) * mesh1.step)</p><pre><code class="nohighlight hljs">advection!(flandau, mesh1, v, dt)
 transpose!(flandauᵗ, flandau)
-
-Elandau = Array{Float64}(undef, nsteps)
-
-ex = zeros(Float64,n1)
 hmf_poisson!(flandauᵗ, mesh1, mesh2, ex)
-advection!(flandauᵗ, mesh2, ex, 0.5dt)
-
-
-for n in 1:nsteps
-    Elandau[n] = sqrt(sum(ex.^2) * mesh1.step)
-
-    advection!(flandau, mesh1, v, dt)
-    transpose!(flandauᵗ, flandau)
-    hmf_poisson!(flandauᵗ, mesh1, mesh2, ex)
-    advection!(flandauᵗ, mesh2, ex, dt)
-    transpose!(flandau, flandauᵗ)
-end</code></pre><pre><code class="language-julia hljs">t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect
-
-period = 2π / 1.4156
-start = 10.5
-nbperiods = [2, 4, 6, 8]
-vline([start], ls=:dash, label=&quot;Period reference&quot;, c=&quot;black&quot;)
-for p=nbperiods
-  vline!([start + p.*period], ls=:dash, label=&quot;After $p periods&quot;, c=&quot;grey&quot;)
-end
-
-plot!(t, log.(Elandau), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;)
-plot!(x-&gt; - 0.1533x - 3.2, label=&quot;y = -0.1533x - 5.5&quot;)
-# Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.4156.
-# Each period in the energy is materialized by 2 bumps.
-
-plot!(t, log.(abs.(4ϵ.*0.3677.*exp.(-0.1533.*t).*cos.(1.4156.*t .- 0.536245)) * √(mesh1.stop/2.)), label=&quot;theoretical&quot;, ls=:dash)
-plot!(legend=:topright)</code></pre><h4 id="k_x-0.4"><a class="docs-heading-anchor" href="#k_x-0.4"><span>$k_x = 0.4$</span></a><a id="k_x-0.4-1"></a><a class="docs-heading-anchor-permalink" href="#k_x-0.4" title="Permalink"></a></h4><pre><code class="language-julia hljs">import VlasovSolvers: advection!
-
-dev = CPU()
-nsteps = 500
-dt = 0.1
-
-ϵ = 0.001
-kx = 0.4
-# For this set of parameters the expected damping coefficient is -0.0661,
-# and the &quot;period of the damping&quot; is ≈2π/1.2850.
-
-mesh1 = OneDGrid(dev, 64, 0, 2π / kx)
-mesh2 = OneDGrid(dev, 128, -10, 10)
-
-n1, delta1 = mesh1.len, mesh1.step
-n2, delta2 = mesh2.len, mesh2.step
-x, v = mesh1.points, mesh2.points&#39;
-
-flandau  = zeros(Complex{Float64}, (n1,n2))
-flandauᵗ = zeros(Complex{Float64}, (n2,n1))
-
-@. flandau  = exp(-v^2 / 2) * (1 + ϵ * cos(x*kx)) / sqrt(2π)
+advection!(flandauᵗ, mesh2, ex, dt)
+transpose!(flandau, flandauᵗ)</code></pre><p>end</p><pre><code class="nohighlight hljs"></code></pre><p>julia t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect</p><p>period = 2π / 1.4156 start = 10.5 nbperiods = [2, 4, 6, 8] vline([start], ls=:dash, label=&quot;Period reference&quot;, c=&quot;black&quot;) for p=nbperiods   vline!([start + p.*period], ls=:dash, label=&quot;After p periods&quot;, c=&quot;grey&quot;) end</p><p>plot!(t, log.(Elandau), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;) plot!(x-&gt; - 0.1533x - 3.2, label=&quot;y = -0.1533x - 5.5&quot;)</p><h1 id="Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156."><a class="docs-heading-anchor" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156.">Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.4156.</a><a id="Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156.-1"></a><a class="docs-heading-anchor-permalink" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156." title="Permalink"></a></h1><h1 id="Each-period-in-the-energy-is-materialized-by-2-bumps."><a class="docs-heading-anchor" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.">Each period in the energy is materialized by 2 bumps.</a><a id="Each-period-in-the-energy-is-materialized-by-2-bumps.-1"></a><a class="docs-heading-anchor-permalink" href="#Each-period-in-the-energy-is-materialized-by-2-bumps." title="Permalink"></a></h1><p>plot!(t, log.(abs.(4ϵ.<em>0.3677.</em>exp.(-0.1533.<em>t).</em>cos.(1.4156.*t .- 0.536245)) * √(mesh1.stop/2.)), label=&quot;theoretical&quot;, ls=:dash) plot!(legend=:topright)</p><pre><code class="nohighlight hljs">
+#### $k_x = 0.4$ 
+</code></pre><p>julia import VlasovSolvers: advection!</p><p>dev = CPU() nsteps = 500 dt = 0.1</p><p>ϵ = 0.001 kx = 0.4</p><h1 id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.0661,"><a class="docs-heading-anchor" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.0661,">For this set of parameters the expected damping coefficient is -0.0661,</a><a id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.0661,-1"></a><a class="docs-heading-anchor-permalink" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.0661," title="Permalink"></a></h1><h1 id="and-the-&quot;period-of-the-damping&quot;-is-2π/1.2850."><a class="docs-heading-anchor" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.2850.">and the &quot;period of the damping&quot; is ≈2π/1.2850.</a><a id="and-the-&quot;period-of-the-damping&quot;-is-2π/1.2850.-1"></a><a class="docs-heading-anchor-permalink" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.2850." title="Permalink"></a></h1><p>mesh1 = OneDGrid(dev, 64, 0, 2π / kx) mesh2 = OneDGrid(dev, 128, -10, 10)</p><p>n1, delta1 = mesh1.len, mesh1.step n2, delta2 = mesh2.len, mesh2.step x, v = mesh1.points, mesh2.points&#39;</p><p>flandau  = zeros(Complex{Float64}, (n1,n2)) flandauᵗ = zeros(Complex{Float64}, (n2,n1))</p><p>@. flandau  = exp(-v^2 / 2) * (1 + ϵ * cos(x*kx)) / sqrt(2π) transpose!(flandauᵗ, flandau)</p><p>Elandau = Array{Float64}(undef, nsteps)</p><p>ex = zeros(Float64,n1) hmf_poisson!(flandauᵗ, mesh1, mesh2, ex) advection!(flandauᵗ, mesh2, ex, 0.5dt)</p><p>for n in 1:nsteps     Elandau[n] = sqrt(sum(ex.^2) * mesh1.step)</p><pre><code class="nohighlight hljs">advection!(flandau, mesh1, v, dt)
 transpose!(flandauᵗ, flandau)
-
-Elandau = Array{Float64}(undef, nsteps)
-
-ex = zeros(Float64,n1)
 hmf_poisson!(flandauᵗ, mesh1, mesh2, ex)
-advection!(flandauᵗ, mesh2, ex, 0.5dt)
+advection!(flandauᵗ, mesh2, ex, dt)
+transpose!(flandau, flandauᵗ)</code></pre><p>end</p><pre><code class="nohighlight hljs"></code></pre><p>julia t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect</p><p>period = 2π / 1.2850 start = 8.7 nbperiods = [2, 4, 6, 8] vline([start], ls=:dash, label=&quot;Period reference&quot;, c=&quot;black&quot;) for p=nbperiods   vline!([start + p.*period], ls=:dash, label=&quot;After p periods&quot;, c=&quot;grey&quot;) end</p><p>plot!(t, log.(Elandau), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;) plot!(x-&gt; - 0.0661x - 5.2, label=&quot;y = -0.0661x - 5.2&quot;)</p><h1 id="Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156.-2"><a class="docs-heading-anchor" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156.-2">Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.4156.</a><a class="docs-heading-anchor-permalink" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.4156.-2" title="Permalink"></a></h1><h1 id="Each-period-in-the-energy-is-materialized-by-2-bumps.-2"><a class="docs-heading-anchor" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.-2">Each period in the energy is materialized by 2 bumps.</a><a class="docs-heading-anchor-permalink" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.-2" title="Permalink"></a></h1><p>plot!(t, log.(4ϵ.<em>0.42466.</em>exp.(-0.0661.<em>t).</em>abs.(cos.(1.285.<em>t .- 0.33577)) .</em> √((mesh1.stop - mesh1.start)/2.)), label=&quot;theoretical&quot;, ls=:dash) plot!(legend=:topright)</p><pre><code class="nohighlight hljs">
+### Two-stream Instability
 
 
-for n in 1:nsteps
-    Elandau[n] = sqrt(sum(ex.^2) * mesh1.step)
+Again, we consider $x\in [0, 2\pi/k_x]$. The initial condition reads </code></pre><p>math f<em>0(x,v) = (1+\epsilon\cos(k</em>x x)) \frac{e^{-(v+v<em>0)^2/2} + e^{-(v-v</em>0)^2/2}}{2\sqrt{2\pi}}</p><pre><code class="nohighlight hljs">
 
-    advection!(flandau, mesh1, v, dt)
-    transpose!(flandauᵗ, flandau)
-    hmf_poisson!(flandauᵗ, mesh1, mesh2, ex)
-    advection!(flandauᵗ, mesh2, ex, dt)
-    transpose!(flandau, flandauᵗ)
-end</code></pre><pre><code class="language-julia hljs">t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect
-
-period = 2π / 1.2850
-start = 8.7
-nbperiods = [2, 4, 6, 8]
-vline([start], ls=:dash, label=&quot;Period reference&quot;, c=&quot;black&quot;)
-for p=nbperiods
-  vline!([start + p.*period], ls=:dash, label=&quot;After $p periods&quot;, c=&quot;grey&quot;)
-end
-
-
-plot!(t, log.(Elandau), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;)
-plot!(x-&gt; - 0.0661x - 5.2, label=&quot;y = -0.0661x - 5.2&quot;)
-# Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.4156.
-# Each period in the energy is materialized by 2 bumps.
-
-plot!(t, log.(4ϵ.*0.42466.*exp.(-0.0661.*t).*abs.(cos.(1.285.*t .- 0.33577)) .* √((mesh1.stop - mesh1.start)/2.)), label=&quot;theoretical&quot;, ls=:dash)
-plot!(legend=:topright)</code></pre><h3 id="Two-stream-Instability"><a class="docs-heading-anchor" href="#Two-stream-Instability">Two-stream Instability</a><a id="Two-stream-Instability-1"></a><a class="docs-heading-anchor-permalink" href="#Two-stream-Instability" title="Permalink"></a></h3><p>Again, we consider <span>$x\in [0, 2\pi/k_x]$</span>. The initial condition reads  $ f<em>0(x,v) = (1+\epsilon\cos(k</em>x x)) \frac{e^{-(v+v<em>0)^2/2} + e^{-(v-v</em>0)^2/2}}{2\sqrt{2\pi}} $</p><h4 id="k_x0.2,-v_01.3"><a class="docs-heading-anchor" href="#k_x0.2,-v_01.3"><span>$k_x=0.2, v_0=1.3$</span></a><a id="k_x0.2,-v_01.3-1"></a><a class="docs-heading-anchor-permalink" href="#k_x0.2,-v_01.3" title="Permalink"></a></h4><pre><code class="language-julia hljs">import VlasovSolvers: advection!
-
-dev = CPU()
-nsteps = 1000
-dt = 0.1
-
-ϵ = 0.001
-kx = 0.2
-v0 = 1.3
-# For this set of parameters the expected damping coefficient is -0.00104
-# and the &quot;period of the damping&quot; is ≈2π/1.1648.
-
-mesh1 = OneDGrid(dev, 64, 0, 2π / kx)
-mesh2 = OneDGrid(dev, 128, -10, 10)
-
-n1, delta1 = mesh1.len, mesh1.step
-n2, delta2 = mesh2.len, mesh2.step
-x, v = mesh1.points, mesh2.points&#39;
-
-ftsi  = zeros(Complex{Float64}, (n1,n2))
-ftsiᵗ  = zeros(Complex{Float64}, (n2,n1))
-
-@.  ftsi =  (exp(- 0.5 * (v-v0)^2) + exp(-0.5 * (v+v0)^2)) * (1 + ϵ * cos(kx*x)) / (2*√(2π))
+#### $k_x=0.2, v_0=1.3$
+</code></pre><p>julia import VlasovSolvers: advection!</p><p>dev = CPU() nsteps = 1000 dt = 0.1</p><p>ϵ = 0.001 kx = 0.2 v0 = 1.3</p><h1 id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.00104"><a class="docs-heading-anchor" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.00104">For this set of parameters the expected damping coefficient is -0.00104</a><a id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.00104-1"></a><a class="docs-heading-anchor-permalink" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.00104" title="Permalink"></a></h1><h1 id="and-the-&quot;period-of-the-damping&quot;-is-2π/1.1648."><a class="docs-heading-anchor" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.1648.">and the &quot;period of the damping&quot; is ≈2π/1.1648.</a><a id="and-the-&quot;period-of-the-damping&quot;-is-2π/1.1648.-1"></a><a class="docs-heading-anchor-permalink" href="#and-the-&quot;period-of-the-damping&quot;-is-2π/1.1648." title="Permalink"></a></h1><p>mesh1 = OneDGrid(dev, 64, 0, 2π / kx) mesh2 = OneDGrid(dev, 128, -10, 10)</p><p>n1, delta1 = mesh1.len, mesh1.step n2, delta2 = mesh2.len, mesh2.step x, v = mesh1.points, mesh2.points&#39;</p><p>ftsi  = zeros(Complex{Float64}, (n1,n2)) ftsiᵗ  = zeros(Complex{Float64}, (n2,n1))</p><p>@.  ftsi =  (exp(- 0.5 * (v-v0)^2) + exp(-0.5 * (v+v0)^2)) * (1 + ϵ * cos(kx<em>x)) / (2</em>√(2π)) transpose!(ftsiᵗ, ftsi)</p><p>Etsi = Array{Float64}(undef, nsteps)</p><p>ex = zeros(Float64,n1) hmf_poisson!(ftsiᵗ, mesh1, mesh2, ex) advection!(ftsiᵗ, mesh2, ex, 0.5dt)</p><p>for n in 1:nsteps     Etsi[n] = sqrt(sum(ex.^2) * mesh1.step)</p><pre><code class="nohighlight hljs">advection!(ftsi, mesh1, v, dt)
 transpose!(ftsiᵗ, ftsi)
-
-Etsi = Array{Float64}(undef, nsteps)
-
-ex = zeros(Float64,n1)
 hmf_poisson!(ftsiᵗ, mesh1, mesh2, ex)
-advection!(ftsiᵗ, mesh2, ex, 0.5dt)
-
-
-for n in 1:nsteps
-    Etsi[n] = sqrt(sum(ex.^2) * mesh1.step)
-
-    advection!(ftsi, mesh1, v, dt)
-    transpose!(ftsiᵗ, ftsi)
-    hmf_poisson!(ftsiᵗ, mesh1, mesh2, ex)
-    advection!(ftsiᵗ, mesh2, ex, dt)
-    transpose!(ftsi, ftsiᵗ)
-end</code></pre><pre><code class="language-julia hljs">t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect
-
-plot(t, log.(Etsi), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;)
-plot!(x-&gt; -0.00104x - 4.15, label=&quot;y = -0.00104x - 4.15&quot;)
-# Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.1648.
-# Each period in the energy is materialized by 2 bumps.
-period = 2π / 1.1648
-start = 9.5
-nbperiods = [5, 10, 15]
-vline!([start], ls=:dash, label=&quot;Period reference&quot;, c=&quot;black&quot;)
-for p=nbperiods
-  vline!([start + p.*period], ls=:dash, label=&quot;After $p periods&quot;, c=&quot;grey&quot;)
-end
-
-plot!(legend=:bottomright)</code></pre><h4 id="k_x-0.2,-v_0-3.0"><a class="docs-heading-anchor" href="#k_x-0.2,-v_0-3.0"><span>$k_x = 0.2, v_0 = 3.0$</span></a><a id="k_x-0.2,-v_0-3.0-1"></a><a class="docs-heading-anchor-permalink" href="#k_x-0.2,-v_0-3.0" title="Permalink"></a></h4><pre><code class="language-julia hljs">import VlasovSolvers: advection!
-
-dev = CPU()
-nsteps = 500
-dt = 0.1
-
-ϵ = 0.001
-kx = 0.2
-v0 = 3.0
-# For this set of parameters the expected damping coefficient is +0.2845.
-
-mesh1 = OneDGrid(dev, 64, 0, 2π / kx)
-mesh2 = OneDGrid(dev, 128, -10, 10)
-
-n1, delta1 = mesh1.len, mesh1.step
-n2, delta2 = mesh2.len, mesh2.step
-x, v = mesh1.points, mesh2.points&#39;
-
-ftsi  = zeros(Complex{Float64}, (n1,n2))
-ftsiᵗ  = zeros(Complex{Float64}, (n2,n1))
-
-@.  ftsi =  (exp(- 0.5 * (v-v0)^2) + exp(-0.5 * (v+v0)^2)) * (1 + ϵ * cos(kx*x)) / (2*√(2π))
+advection!(ftsiᵗ, mesh2, ex, dt)
+transpose!(ftsi, ftsiᵗ)</code></pre><p>end</p><pre><code class="nohighlight hljs"></code></pre><p>julia t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect</p><p>plot(t, log.(Etsi), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;) plot!(x-&gt; -0.00104x - 4.15, label=&quot;y = -0.00104x - 4.15&quot;)</p><h1 id="Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.1648."><a class="docs-heading-anchor" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.1648.">Check &quot;periods&quot; of energy : theoretically they are ≈2π/1.1648.</a><a id="Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.1648.-1"></a><a class="docs-heading-anchor-permalink" href="#Check-&quot;periods&quot;-of-energy-:-theoretically-they-are-2π/1.1648." title="Permalink"></a></h1><h1 id="Each-period-in-the-energy-is-materialized-by-2-bumps.-3"><a class="docs-heading-anchor" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.-3">Each period in the energy is materialized by 2 bumps.</a><a class="docs-heading-anchor-permalink" href="#Each-period-in-the-energy-is-materialized-by-2-bumps.-3" title="Permalink"></a></h1><p>period = 2π / 1.1648 start = 9.5 nbperiods = [5, 10, 15] vline!([start], ls=:dash, label=&quot;Period reference&quot;, c=&quot;black&quot;) for p=nbperiods   vline!([start + p.*period], ls=:dash, label=&quot;After p periods&quot;, c=&quot;grey&quot;) end</p><p>plot!(legend=:bottomright)</p><pre><code class="nohighlight hljs">
+#### $k_x = 0.2, v_0 = 3.0$
+</code></pre><p>julia import VlasovSolvers: advection!</p><p>dev = CPU() nsteps = 500 dt = 0.1</p><p>ϵ = 0.001 kx = 0.2 v0 = 3.0</p><h1 id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.2845."><a class="docs-heading-anchor" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.2845.">For this set of parameters the expected damping coefficient is +0.2845.</a><a id="For-this-set-of-parameters-the-expected-damping-coefficient-is-0.2845.-1"></a><a class="docs-heading-anchor-permalink" href="#For-this-set-of-parameters-the-expected-damping-coefficient-is-0.2845." title="Permalink"></a></h1><p>mesh1 = OneDGrid(dev, 64, 0, 2π / kx) mesh2 = OneDGrid(dev, 128, -10, 10)</p><p>n1, delta1 = mesh1.len, mesh1.step n2, delta2 = mesh2.len, mesh2.step x, v = mesh1.points, mesh2.points&#39;</p><p>ftsi  = zeros(Complex{Float64}, (n1,n2)) ftsiᵗ  = zeros(Complex{Float64}, (n2,n1))</p><p>@.  ftsi =  (exp(- 0.5 * (v-v0)^2) + exp(-0.5 * (v+v0)^2)) * (1 + ϵ * cos(kx<em>x)) / (2</em>√(2π)) transpose!(ftsiᵗ, ftsi)</p><p>Etsi = Array{Float64}(undef, nsteps)</p><p>ex = zeros(Float64,n1) hmf_poisson!(ftsiᵗ, mesh1, mesh2, ex) advection!(ftsiᵗ, mesh2, ex, 0.5dt)</p><p>for n in 1:nsteps     Etsi[n] = sqrt(sum(ex.^2) * mesh1.step)</p><pre><code class="nohighlight hljs">advection!(ftsi, mesh1, v, dt)
 transpose!(ftsiᵗ, ftsi)
-
-Etsi = Array{Float64}(undef, nsteps)
-
-ex = zeros(Float64,n1)
 hmf_poisson!(ftsiᵗ, mesh1, mesh2, ex)
-advection!(ftsiᵗ, mesh2, ex, 0.5dt)
-
-
-for n in 1:nsteps
-    Etsi[n] = sqrt(sum(ex.^2) * mesh1.step)
-
-    advection!(ftsi, mesh1, v, dt)
-    transpose!(ftsiᵗ, ftsi)
-    hmf_poisson!(ftsiᵗ, mesh1, mesh2, ex)
-    advection!(ftsiᵗ, mesh2, ex, dt)
-    transpose!(ftsi, ftsiᵗ)
-end</code></pre><pre><code class="language-julia hljs">t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect
-
-plot(t, log.(Etsi), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;)
-plot!(x-&gt; 0.2845x - 6.2, label=&quot;y = 0.2845x - 6.2&quot;)</code></pre><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>We illustrated the fact that the Vlasov-HMF equations is a toy model that exhibits a behavior very close to the Vlasov-Poisson system. </p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../rotation2d/">« Rotation 2D</a><a class="docs-footer-nextpage" href="../tsi/">Two-stream instability »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.13 on <span class="colophon-date" title="Monday 28 February 2022 11:02">Monday 28 February 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+advection!(ftsiᵗ, mesh2, ex, dt)
+transpose!(ftsi, ftsiᵗ)</code></pre><p>end</p><pre><code class="nohighlight hljs"></code></pre><p>julia t = range(0., stop=nsteps*dt, length=nsteps) |&gt; collect</p><p>plot(t, log.(Etsi), xlabel = &quot;t&quot;, minorgrid=true, label=&quot;log(E(t))&quot;) plot!(x-&gt; 0.2845x - 6.2, label=&quot;y = 0.2845x - 6.2&quot;) ```</p><h2 id="Conclusion"><a class="docs-heading-anchor" href="#Conclusion">Conclusion</a><a id="Conclusion-1"></a><a class="docs-heading-anchor-permalink" href="#Conclusion" title="Permalink"></a></h2><p>We illustrated the fact that the Vlasov-HMF equations is a toy model that exhibits a behavior very close to the Vlasov-Poisson system. </p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../rotation2d/">« Rotation 2D</a><a class="docs-footer-nextpage" href="../tsi/">Two-stream instability »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.13 on <span class="colophon-date" title="Monday 28 February 2022 11:15">Monday 28 February 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
