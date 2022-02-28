@@ -21,13 +21,13 @@ transform, assuming $\Phi$ has a zero average. In the discrete case this is perf
 ourselves to the Fourier modes corresponding to the frequencies $k=\pm 1$ (the mode corresponding to $k=0$ is zero 
 since $\Phi$ has a zero average).
 
-```julia
+```@example hmf
 using LinearAlgebra, QuadGK, Roots, FFTW
 using VlasovSolvers
 using Plots
 ```
 
-```julia
+```@example hmf
 function mag(β, mass)
     F(m) = begin
         g(x, n, m) = (1 / π) * (exp(β * m * cos(x)) * cos(n * x))
@@ -39,13 +39,13 @@ function mag(β, mass)
 end
 ```
 
-```julia
+```@example hmf
 function Norm(f::Array{Float64,2}, delta1, delta2)
     delta1 * sum(delta2 * sum(real(f), dims=1))
 end
 ```
 
-```julia
+```@example hmf
 """
     hmf_poisson!(fᵗ    :: Array{Complex{Float64},2},
                  mesh1 :: OneDGrid,
@@ -71,7 +71,7 @@ function hmf_poisson!(fᵗ::Array{Complex{Float64},2},
 end
 ```
 
-```julia
+```@example hmf
 dev = CPU()
 nsteps = 1000
 dt = 0.1
@@ -139,7 +139,7 @@ For the parameters chosen, we obtain that
 ```
 where $\alpha = 0.32962331549891355$.
 
-```julia
+```@example hmf
 ex = zeros(Float64,n1)
 hmf_poisson!(fᵗ, mesh1, mesh2, ex)
 test = copy(f)
@@ -149,7 +149,7 @@ plot(x, ex, label="E(t,x)", minorgrid=true)
 plot!(x, α*sin.(x), markershape=:circle, linewidth=0, label="αsin(x)")
 ```
 
-```julia
+```@example hmf
 maximum(ex) - α
 ```
 
@@ -181,7 +181,7 @@ f_0(x,v) = (1+\epsilon \cos(k_x x)) \frac{e^{-v^2/2}}{\sqrt{2\pi}}
 
 #### $k_x = 0.5$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -224,7 +224,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 period = 2π / 1.4156
@@ -246,7 +246,7 @@ plot!(legend=:topright)
 
 #### $k_x = 0.4$ 
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -289,7 +289,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 period = 2π / 1.2850
@@ -321,7 +321,7 @@ f_0(x,v) = (1+\epsilon\cos(k_x x)) \frac{e^{-(v+v_0)^2/2} + e^{-(v-v_0)^2/2}}{2\
 
 #### $k_x=0.2, v_0=1.3$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -365,7 +365,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 plot(t, log.(Etsi), xlabel = "t", minorgrid=true, label="log(E(t))")
@@ -385,7 +385,7 @@ plot!(legend=:bottomright)
 
 #### $k_x = 0.2, v_0 = 3.0$
 
-```julia
+```@example hmf
 import VlasovSolvers: advection!
 
 dev = CPU()
@@ -428,7 +428,7 @@ for n in 1:nsteps
 end
 ```
 
-```julia
+```@example hmf
 t = range(0., stop=nsteps*dt, length=nsteps) |> collect
 
 plot(t, log.(Etsi), xlabel = "t", minorgrid=true, label="log(E(t))")
