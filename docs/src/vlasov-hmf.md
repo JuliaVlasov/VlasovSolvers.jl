@@ -153,7 +153,7 @@ plot!(x, α*sin.(x), markershape=:circle, linewidth=0, label="αsin(x)")
 maximum(ex) - α
 ```
 
-Hence our numerical computation of ``ex`` through ``hmf_poisson!`` gives the expected result.
+Hence our numerical computation of `ex` through `hmf_poisson!` gives the expected result.
 
 
 ## Benchmarks
