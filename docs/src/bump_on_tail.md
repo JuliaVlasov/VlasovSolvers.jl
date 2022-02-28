@@ -4,9 +4,6 @@
 using VlasovSolvers
 using Plots
 using LaTeXStrings
-```
-
-```@example 3
 
 dev = CPU()                  # device
 stepper = StrangSplitting()  # timestepper
@@ -30,9 +27,7 @@ for (i,x) in enumerate(mesh1.points), (j,v) in enumerate(mesh2.points)
     f.values[i,j]  = (1.0+α*cos(kx*x)) / (10*sqrt(2π)) * (9*exp(-0.5*v^2)+2*exp(-2*(v-4.5)^2))
 end
 
-```
 
-```@example 3
 nsteps = 500
 t   = range(0.0, stop=50.0, length=nsteps)
 dt  = t[2]
@@ -40,8 +35,6 @@ dt  = t[2]
 prob = VlasovProblem(f, BSLSpline(5), dev)
 
 sol = solve!(prob, stepper, dt, nsteps )
-```
 
-```@example 3
 plot(t, sol, label=L"\frac{1}{2} \log(\int e^2dx)")
 ```
