@@ -1,3 +1,5 @@
+# Vlasov-HMF
+
 In this example we will show how the VlasovSolvers package can be used to solve the Vlasov equations in the Hamiltonian 
 Mean Field framework (usually called Vlasov-HMF).
 
