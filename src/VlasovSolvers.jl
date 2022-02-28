@@ -1,9 +1,6 @@
 module VlasovSolvers
 
   using FFTW, LinearAlgebra, Statistics
-  
-  # PIC dependencies:
-  using Sobol, Roots, Random, Distributions, SparseArrays, LinearAlgebra
 
   include("devices.jl")
   include("grids.jl")
@@ -12,6 +9,5 @@ module VlasovSolvers
   include("steppers.jl")
   include("fourier.jl")
   include("problems.jl")
-  include("PF.jl")
 
 end

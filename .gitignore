@@ -4,7 +4,5 @@
 deps/deps.jl
 Manifest.toml
 *.swp
-**/.ipynb_checkpoints
-**/.DS_Store
-**/*.mp4
-**/*.gif
+docs/src/.ipynb_checkpoints
+docs/src/tmp.gif
