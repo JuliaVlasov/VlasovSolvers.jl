@@ -153,7 +153,7 @@ plot!(x, α*sin.(x), markershape=:circle, linewidth=0, label="αsin(x)")
 maximum(ex) - α
 ```
 
-Hence our numerical computation of ``ex`` through ``hmf_poisson!`` gives the expected result.
+Hence our numerical computation of `ex` through `hmf_poisson!` gives the expected result.
 
 
 ## Benchmarks
@@ -176,7 +176,7 @@ The results are to be compared with those obtained by solving the Vlasov-Poisson
 Here we consider $x\in[0, 2\pi/k_x]$, with $k_x$ some parameter. The initial condition reads
 ```math
 f_0(x,v) = (1+\epsilon \cos(k_x x)) \frac{e^{-v^2/2}}{\sqrt{2\pi}}
-
+```
 
 
 #### $k_x = 0.5$
@@ -438,4 +438,5 @@ plot!(x-> 0.2845x - 6.2, label="y = 0.2845x - 6.2")
 ## Conclusion
 
 
-We illustrated the fact that the Vlasov-HMF equations is a toy model that exhibits a behavior very close to the Vlasov-Poisson system. 
+We illustrated the fact that the Vlasov-HMF equations is a toy model that exhibits a behavior very close to the 
+Vlasov-Poisson system. 
