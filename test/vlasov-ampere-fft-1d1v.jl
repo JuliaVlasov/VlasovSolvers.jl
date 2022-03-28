@@ -22,7 +22,7 @@ landau!(f, α, kx)
 
 prob = VlasovProblem(f, Fourier(xgrid, vgrid), dev)
 
-sol = solve!(prob, stepper, dt, nsteps )
+sol = solve(prob, stepper, dt, nsteps )
 
 @test true
 

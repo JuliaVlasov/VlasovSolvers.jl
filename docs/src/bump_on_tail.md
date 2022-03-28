@@ -34,7 +34,7 @@ dt  = t[2]
 
 prob = VlasovProblem(f, BSLSpline(5), dev)
 
-sol = solve!(prob, stepper, dt, nsteps )
+sol = solve(prob, stepper, dt, nsteps )
 
-plot(t, sol, label=L"\frac{1}{2} \log(\int e^2dx)")
+plot(sol, label=L"\frac{1}{2} \log(\int e^2dx)")
 ```

@@ -60,10 +60,8 @@ prob = VlasovProblem(f, Fourier(xgrid, vgrid), dev)
 nsteps = 600
 dt = 0.1
 
-sol = solve!(prob, stepper, dt, nsteps )
+sol = solve(prob, stepper, dt, nsteps )
 
-t =  range(0,stop=60,length=nsteps)
-
-plot(t, -0.1533*t.-5.48)
-plot!(t, sol, label="ampere" )
+plot(sol.times, -0.1533*sol.times .- 5.48)
+plot!(sol; label="ampere" )
 ```
