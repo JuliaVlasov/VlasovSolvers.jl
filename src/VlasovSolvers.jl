@@ -1,6 +1,9 @@
 module VlasovSolvers
 
-  using FFTW, LinearAlgebra, Statistics
+  using DocStringExtensions
+  using FFTW
+  using LinearAlgebra
+  using Statistics
 
   export solve
 
@@ -8,6 +11,8 @@ module VlasovSolvers
   include("grids.jl")
   include("distribution_functions.jl")
   include("bspline.jl")
+  include("lagrange.jl")
+  include("advection.jl")
   include("steppers.jl")
   include("fourier.jl")
   include("solution.jl")

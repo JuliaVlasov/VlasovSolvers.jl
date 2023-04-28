@@ -35,7 +35,7 @@ vmin, vmax = -6, 6           # V Domain length (m)
 kx = 0.5                     # Wave number of perturbation
 ```
 
-## Simulation
+## Simulation with BSpline interpolation
 
 ```@example 1
 xgrid = OneDGrid(dev, nx, xmin, xmax)
@@ -46,6 +46,21 @@ f = DistributionFunction( xgrid, vgrid )
 landau!(f, α, kx)
 
 prob = VlasovProblem(f, BSLSpline(5), dev)
+
+sol = solve(prob, stepper, dt, nsteps )
+
+t = sol.times
+
+plot(sol; label = "E")
+plot!(t, -0.1533*t.-5.50; label="-0.1533t.-5.5")
+```
+
+## Simulation with Lagrange interpolation
+
+```@example 1
+landau!(f, α, kx)
+
+prob = VlasovProblem(f, BSLLagrange(9), dev)
 
 sol = solve(prob, stepper, dt, nsteps )
 

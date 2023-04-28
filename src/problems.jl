@@ -12,18 +12,12 @@ struct VlasovProblem{Method<:AbstractMethod} <: AbstractProblem
     method :: Method
     dev :: AbstractDevice
 
-    function VlasovProblem( f, method:: BSLSpline, dev)
+    VlasovProblem( f, method::BSLSpline, dev) = new{BSLSpline}( f, method, dev)
 
-        new{BSLSpline}( f, method, dev)
+    VlasovProblem( f, method::Fourier, dev) = new{Fourier}( f, method, dev)
 
-    end
-
-    function VlasovProblem( f, method::Fourier, dev)
-
-        new{Fourier}( f, method, dev)
+    VlasovProblem( f, method::BSLLagrange, dev) = new{BSLLagrange}( f, method, dev)
       
-    end
-
 end
 
 
@@ -31,7 +25,7 @@ end
     solve!( problem, stepper, dt, nsteps)
 
 """
-function solve( problem::VlasovProblem{BSLSpline}, stepper::StrangSplitting, dt, nsteps)
+function solve( problem::AbstractProblem, stepper::StrangSplitting, dt, nsteps)
   
   nrj = Vector{Float64}(undef, nsteps)
 
@@ -40,12 +34,12 @@ function solve( problem::VlasovProblem{BSLSpline}, stepper::StrangSplitting, dt,
   time = 0.0
   for it in 1:nsteps
 
-     advection_x!( problem.f, 0.5dt, problem.method.p)
-     energy = advection_v!( problem.f, dt, problem.method.p)
+     advection_x!( problem.f, 0.5dt, problem.method)
+     energy = advection_v!( problem.f, dt, problem.method)
      time += dt
      push!(sol.times, time)
      push!(sol.energy, energy)
-     advection_x!( problem.f, 0.5dt, problem.method.p)
+     advection_x!( problem.f, 0.5dt, problem.method)
 
   end
                   
@@ -55,7 +49,6 @@ end
 
 function solve( problem::VlasovProblem{Fourier}, stepper::StrangSplitting, dt, nsteps)
 
-    # Initialize distribution function
     x = problem.f.xgrid.points |> collect
     v = problem.f.vgrid.points |> collect
     nx = problem.f.xgrid.len
