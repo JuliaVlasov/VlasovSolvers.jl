@@ -9,7 +9,7 @@ nsteps = 10                  # total number of time-steps
 xmin, xmax = 0, 4π           # X Domain length (m)
 vmin, vmax = -6, 6           # V Domain length (m)
 α  = 0.5                     # Perturbation amplitude
-α  = 0.5                      # Wave number of perturbation
+kx = 0.5                     # Wave number of perturbation
 
 xgrid = OneDGrid(dev, nx, xmin, xmax)
 vgrid = OneDGrid(dev, nv, vmin, vmax)
