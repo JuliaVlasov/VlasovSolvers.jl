@@ -3,8 +3,9 @@ export VlasovProblem
 abstract type AbstractProblem end
 
 """
-    VlasovProblem( f, method, dev)
+$(TYPEDEF)
 
+$(TYPEDFIELDS)
 """
 struct VlasovProblem{Method<:AbstractMethod} <: AbstractProblem
 
@@ -22,8 +23,7 @@ end
 
 
 """
-    solve!( problem, stepper, dt, nsteps)
-
+$(SIGNATURES)
 """
 function solve( problem::AbstractProblem, stepper::StrangSplitting, dt, nsteps)
   
@@ -47,6 +47,9 @@ function solve( problem::AbstractProblem, stepper::StrangSplitting, dt, nsteps)
 
 end
 
+"""
+$(SIGNATURES)
+"""
 function solve( problem::VlasovProblem{Fourier}, stepper::StrangSplitting, dt, nsteps)
 
     x = problem.f.xgrid.points |> collect

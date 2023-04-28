@@ -1,5 +1,5 @@
 """
-    advection!(f, grid, v, dt; p = 5)
+$(SIGNATURES)
 
 Advect the distribution function `f` with velocity `v` along first `f` dimension
 with a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Real type version.
@@ -49,7 +49,7 @@ function advection!(f    :: Array{AbstractFloat, 2},
 end            
 
 """
-    advection!(f, grid, v, dt; p = 5)
+$(SIGNATURES)
 
 Advect the distribution function `f` with velocity `v` along first `f` dimension
 with a time step `dt`. Interpolation method uses bspline periodic of order 5 by default. Complex type version.
@@ -100,7 +100,7 @@ end
 
 
 """
-    compute_rho(f)
+$(SIGNATURES)
 
 Compute charge density
 ρ(x,t) = ∫ f(x,v,t) dv
@@ -114,7 +114,7 @@ function compute_rho( f::DistributionFunction)
 end
 
 """
-    compute_e(f)
+$(SIGNATURES)
 
 compute Ex using that -ik*Ex = rho 
 """
@@ -133,12 +133,18 @@ function compute_e( f::DistributionFunction )
 end
 
 
+"""
+$(SIGNATURES)
+"""
 function advection_x!( f :: DistributionFunction, dt, method::BSLSpline)
 
     advection!(f.values, f.xgrid, f.vgrid.points, dt; method.p)
 
 end
 
+"""
+$(SIGNATURES)
+"""
 function advection_v!( f :: DistributionFunction, dt, method::BSLSpline)
 
     dx = f.xgrid.step
@@ -152,7 +158,9 @@ function advection_v!( f :: DistributionFunction, dt, method::BSLSpline)
 
 end
 
-
+"""
+$(SIGNATURES)
+"""
 function advection_x!( f :: DistributionFunction, dt, method::BSLLagrange)
 
     nx = f.xgrid.len
@@ -170,6 +178,9 @@ function advection_x!( f :: DistributionFunction, dt, method::BSLLagrange)
 
 end
 
+"""
+$(SIGNATURES)
+"""
 function advection_v!( f :: DistributionFunction, dt, method::BSLLagrange)
 
     dx = f.xgrid.step

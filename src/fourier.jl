@@ -1,5 +1,10 @@
 export Fourier
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+"""
 struct Fourier <: AbstractMethod
     
     kx   :: Vector{Float64}
@@ -24,6 +29,9 @@ struct Fourier <: AbstractMethod
 end
 
 
+"""
+$(SIGNATURES)
+"""
 function advection_v!(fᵗ  :: Array{ComplexF64,2}, 
                       adv :: Fourier,
 		      e   :: Vector{ComplexF64}, 
@@ -34,6 +42,9 @@ function advection_v!(fᵗ  :: Array{ComplexF64,2},
 
 end
 
+"""
+$(SIGNATURES)
+"""
 function advection_x!( f   :: Array{ComplexF64,2}, 
                        adv :: Fourier,
 		       e   :: Vector{ComplexF64}, 

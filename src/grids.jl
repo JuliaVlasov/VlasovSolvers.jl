@@ -1,5 +1,10 @@
 export OneDGrid
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+"""
 struct OneDGrid
 
     dev :: AbstractDevice

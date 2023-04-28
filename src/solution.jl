@@ -1,11 +1,12 @@
 using RecipesBase
 
 """
-    VlasovSolution1D1V
+$(TYPEDEF)
 
 Data structure that stores the solution of the Vlasov problem of one dimension
 in both physical space and phase space.
 
+$(TYPEDFIELDS)
 """
 struct VlasovSolution1D1V
 

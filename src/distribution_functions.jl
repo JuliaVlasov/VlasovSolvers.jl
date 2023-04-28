@@ -5,8 +5,9 @@ using Statistics
 export DistributionFunction
 
 """
-    DistributionFunction( grid1, grid2 )
+$(TYPEDEF)
 
+$(TYPEDFIELDS)
 """
 struct DistributionFunction
 
@@ -29,7 +30,7 @@ end
 export landau!
 
 """
-    landau!( f, α, kx )
+$(SIGNATURES)
 
 Initialize the distribution function for the Landau damping test case
 
@@ -50,6 +51,9 @@ end
 
 export two_stream_instability!
 
+"""
+$(SIGNATURES)
+"""
 function two_stream_instability!(f; eps = 0.01, xi = 0.90, v0 = 2.4)
 
     nx = f.xgrid.len

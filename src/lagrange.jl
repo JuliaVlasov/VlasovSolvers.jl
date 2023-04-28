@@ -2,6 +2,11 @@ import SemiLagrangian: Lagrange, interpolate!, get_order
 
 export BSLLagrange
 
+"""
+$(TYPEDEF)
+
+$(TYPEDFIELDS)
+"""
 struct BSLLagrange <: AbstractMethod
 
     order:: Int
@@ -11,6 +16,9 @@ struct BSLLagrange <: AbstractMethod
 
 end
 
+"""
+$(SIGNATURES)
+"""
 function advection!(fp, fi, mesh, interp::Lagrange, v, dt)
 
     dec = - v * dt / mesh.step

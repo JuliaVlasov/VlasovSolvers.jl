@@ -2,6 +2,9 @@ abstract type AbstractMethod end
 
 export BSLSpline
 
+"""
+$(TYPEDEF)
+"""
 struct BSLSpline <: AbstractMethod
 
     p :: Int
@@ -9,7 +12,7 @@ struct BSLSpline <: AbstractMethod
 end
 
 """
-    bspline(p, j, x)
+$(SIGNATURES)
 
 Return the value at x in [0,1] of the B-spline with integer nodes of degree p with support starting at j.
 Implemented recursively using the [De Boor's Algorithm](https://en.wikipedia.org/wiki/De_Boor%27s_algorithm)
