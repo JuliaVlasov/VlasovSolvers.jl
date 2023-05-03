@@ -118,6 +118,7 @@ into $d$ one dimensional linear transport equations
 where $E_\alpha$ denotes the $\alpha$-th compoent of the electric field $E$. 
 
 ## Semi-Lagrangian method 
+
 According to the previous section, we are led to solve the following linear transport equation 
 ```math
 \partial_t f + a \partial_x f=0, f(t=0, x) = f_0(x), x\in [0, L], 
@@ -184,7 +185,7 @@ and the coefficients $(\eta_i)_{i=0, \dots, N_x-1}$ are
 solution of a linear system to solve (cite De Boor, Michel, ...).
 
 
-## Numerical method for Poisson equation
+## Poisson equation
 
 The Poisson equation with periodic boundary condition is solved using Fourier techniques.
 First, we consider the following DFT (Discrete Fourier Transform) of a

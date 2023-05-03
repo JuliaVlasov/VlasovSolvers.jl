@@ -7,7 +7,6 @@ using VlasovSolvers
 
 ENV["GKSwstype"] = "100"
 
-
 makedocs(modules=[VlasovSolvers],
          sitename = "VlasovSolvers.jl",
          authors="Julia Vlasov",
@@ -17,15 +16,14 @@ makedocs(modules=[VlasovSolvers],
          assets=String[],
          ),
          doctest = false,
-         pages = ["Home"           => "index.md",
-                  "Problem type"   => "problem.md",
-                  "Vlasov-Poisson" => "vlasov-poisson.md",
-                  "Vlasov-Ampere"  => "vlasov-ampere.md",
-                  "Bump On Tail"   => "bump_on_tail.md",
-                  "Rotation 2D"    => "rotation2d.md",
-                  "Vlasov-HMF"     => "vlasov-hmf.md",
-                  "Two-stream instability" => "tsi.md",
-                  "Contents"       => "contents.md"])
+         pages = [ "Home"          => "index.md",
+                   "Quickstart"    => "problem.md",
+                   "Vlasov-Ampere" => "vlasov-ampere.md",
+                   "Bump On Tail"  => "bump_on_tail.md",
+                   "Rotation 2D"   => "rotation2d.md",
+                   "Vlasov-HMF"    => "vlasov-hmf.md",
+                   "Two-stream instability" => "tsi.md",
+                   "Contents"      => "contents.md"])
 
 deploydocs(;
     branch = "gh-pages",
