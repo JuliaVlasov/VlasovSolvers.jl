@@ -23,6 +23,7 @@ makedocs(modules=[VlasovSolvers],
                    "Rotation 2D"   => "rotation2d.md",
                    "Vlasov-HMF"    => "vlasov-hmf.md",
                    "Two-stream instability" => "tsi.md",
+                   "API"           => "api.md",
                    "Contents"      => "contents.md"])
 
 deploydocs(;

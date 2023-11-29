@@ -133,18 +133,12 @@ function compute_e( f::DistributionFunction )
 end
 
 
-"""
-$(SIGNATURES)
-"""
 function advection_x!( f :: DistributionFunction, dt, method::BSLSpline)
 
     advection!(f.values, f.xgrid, f.vgrid.points, dt; method.p)
 
 end
 
-"""
-$(SIGNATURES)
-"""
 function advection_v!( f :: DistributionFunction, dt, method::BSLSpline)
 
     dx = f.xgrid.step
@@ -158,9 +152,6 @@ function advection_v!( f :: DistributionFunction, dt, method::BSLSpline)
 
 end
 
-"""
-$(SIGNATURES)
-"""
 function advection_x!( f :: DistributionFunction, dt, method::BSLLagrange)
 
     nx = f.xgrid.len
@@ -178,9 +169,6 @@ function advection_x!( f :: DistributionFunction, dt, method::BSLLagrange)
 
 end
 
-"""
-$(SIGNATURES)
-"""
 function advection_v!( f :: DistributionFunction, dt, method::BSLLagrange)
 
     dx = f.xgrid.step

@@ -4,6 +4,8 @@ export BSLSpline
 
 """
 $(TYPEDEF)
+
+$(TYPEDFIELDS)
 """
 struct BSLSpline <: AbstractMethod
 

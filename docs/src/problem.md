@@ -77,6 +77,10 @@ method to compute advections. We use the backward semi-lagrangian method with
 VlasovSolvers.VlasovProblem
 ```
 
+```@docs
+VlasovSolvers.BSLSpline
+```
+
 ```@example 1
 prob = VlasovProblem(f, BSLSpline(5), dev)
 ```
