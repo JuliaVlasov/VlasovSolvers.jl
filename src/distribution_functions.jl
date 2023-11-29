@@ -35,7 +35,7 @@ $(SIGNATURES)
 Initialize the distribution function for the Landau damping test case
 
 ```math
-f(x,v,t=0) = \\frac{1}{\\sqrt{2\\pi}} ( 1 + \\cos{kx \cdot x} ) \\exp (-\\frac{v^2}{2})
+f(x,v,t=0) = \\frac{1}{\\sqrt{2\\pi}} ( 1 + \\cos{kx \\cdot x} ) \\exp (-\\frac{v^2}{2})
 ```
 
 """
