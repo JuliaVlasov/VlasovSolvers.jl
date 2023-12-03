@@ -1,10 +1,12 @@
 module VlasovSolvers
 
+  using DispersionRelations
   using DocStringExtensions
   using FFTW
   using LinearAlgebra
   using Statistics
 
+  export fit_complex_frequency
   export solve
 
   include("devices.jl")

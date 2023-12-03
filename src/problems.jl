@@ -80,7 +80,7 @@ function solve( problem::VlasovProblem{Fourier}, stepper::StrangSplitting, dt, n
     sol = VlasovSolution1D1V() 
     time = 0.0
     push!(sol.times, time)
-    energy = log(sqrt((sum(e.^2)) * dx))
+    energy = sqrt((sum(e.^2)) * dx)
     push!(sol.energy, energy)
     
     for it in 1:nsteps
@@ -88,7 +88,7 @@ function solve( problem::VlasovProblem{Fourier}, stepper::StrangSplitting, dt, n
         advection_v!(fᵀ, problem.method, e, 0.5dt)
         transpose!(f,fᵀ)
         advection_x!( f, problem.method, e, v, dt)
-        energy = log(sqrt((sum(e.^2)) * dx))
+        energy = sqrt((sum(e.^2)) * dx)
         time += dt
         push!(sol.times, time)
         push!(sol.energy, energy)

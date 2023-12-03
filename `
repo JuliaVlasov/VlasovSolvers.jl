@@ -116,7 +116,6 @@ sol = solve(prob, stepper, dt, nsteps )
 
 t = sol.times
 
-plot(sol; yscale= :log10, label = "E")
-line, gamma = fit_complex_frequency(t, sol.energy)
-plot!(t, line; label = "growth = $(imag(gamma))")
+plot(sol; label = "E")
+plot!(t, -0.1533*t.-5.50; label="-0.1533t.-5.5")
 ```

@@ -144,7 +144,7 @@ function advection_v!( f :: DistributionFunction, dt, method::BSLSpline)
     dx = f.xgrid.step
     nx = f.xgrid.len
     e  = compute_e(f)
-    nrj = 0.5*log(sum(e.*e)*dx)
+    nrj = sqrt(sum(e.*e)*dx)
     fᵗ = collect(transpose(f.values))
     advection!(fᵗ, f.vgrid, e, dt; method.p)
     f.values .= transpose(fᵗ)
@@ -174,7 +174,7 @@ function advection_v!( f :: DistributionFunction, dt, method::BSLLagrange)
     dx = f.xgrid.step
     nx = f.xgrid.len
     e  = compute_e(f)
-    nrj = 0.5*log(sum(e.*e)*dx)
+    nrj = sqrt(sum(e.*e)*dx)
     
     nv = f.vgrid.len
     fi = zeros(nv)

@@ -36,5 +36,5 @@ prob = VlasovProblem(f, BSLSpline(5), dev)
 
 sol = solve(prob, stepper, dt, nsteps )
 
-plot(sol, label=L"\frac{1}{2} \log(\int e^2dx)")
+plot(sol, yscale = :log10, label=L"\sqrt{\int e^2dx}")
 ```

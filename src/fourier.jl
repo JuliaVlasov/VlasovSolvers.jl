@@ -15,12 +15,12 @@ struct Fourier <: AbstractMethod
         nx  = meshx.len
         dx  = meshx.step
         Lx  = meshx.stop - meshx.start
-        kx  = 2π/Lx .* [0:nx÷2-1;-nx÷2:-1]
+        kx  = 2π/Lx .* fftfreq(nx, nx)
 
         nv  = meshv.len
         dv  = meshv.step
         Lv  = meshv.stop - meshv.start
-        kv  = 2π/Lv .* [0:nv÷2-1;-nv÷2:-1]
+        kv  = 2π/Lv .* fftfreq(nx, nx)
 
         new( kx, kv)
 
